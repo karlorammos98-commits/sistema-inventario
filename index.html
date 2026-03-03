@@ -1,0 +1,3088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventario Local</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #f3f4f6;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #000000, #0f0f0f);
+            color: #e5e7eb;
+            padding: 24px 20px;
+            border-right: 1px solid #dc2626;
+        }
+
+        .sidebar h1 {
+            margin: 0 0 8px;
+            font-size: 22px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .sidebar p {
+            margin: 0 0 20px;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid #dc2626;
+            font-size: 11px;
+            color: #e5e7eb;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #dc2626;
+        }
+
+        .sidebar-section {
+            margin-top: 24px;
+            font-size: 13px;
+        }
+
+        .sidebar-label {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid #dc2626;
+            font-size: 11px;
+            color: #e5e7eb;
+        }
+
+        .btn-stock-sidebar {
+            width: 100%;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: transparent;
+            color: #dc2626;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-stock-sidebar:hover {
+            background: rgba(220, 38, 38, 0.2);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px;
+            background: #0a0a0a;
+        }
+
+        .content-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .content-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .content-title h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #ffffff;
+        }
+
+        .content-title span {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .user-menu-wrap {
+            position: relative;
+            margin-left: auto;
+        }
+        .user-menu-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            color: #e5e7eb;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .user-menu-btn:hover {
+            background: rgba(220, 38, 38, 0.25);
+        }
+        .user-menu-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            min-width: 180px;
+            background: #111;
+            border: 1px solid #dc2626;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 100;
+            overflow: hidden;
+        }
+        .user-menu-dropdown.open {
+            display: block;
+        }
+        .user-menu-dropdown a,
+        .user-menu-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            text-align: left;
+            background: none;
+            border: none;
+            color: #e5e7eb;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .user-menu-dropdown a:hover,
+        .user-menu-dropdown button:hover {
+            background: rgba(220, 38, 38, 0.2);
+        }
+
+        .chip {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: rgba(220, 38, 38, 0.15);
+            color: #e5e7eb;
+            border: 1px solid #dc2626;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.5fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: #111111;
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid #dc2626;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+            border: 1px solid #dc2626;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 12px;
+            color: #d1d5db;
+        }
+
+        input,
+        select {
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            color: #111827;
+        }
+
+        input:hover,
+        select:hover {
+            border-color: #dc2626;
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #dc2626;
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+        }
+
+        button {
+            border: 1px solid #dc2626;
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(220, 38, 38, 0.2);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: rgba(220, 38, 38, 0.4);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+        }
+
+        button:active {
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #e5e7eb;
+            border: 1px solid #dc2626;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(220, 38, 38, 0.2);
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #dc2626;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #111111;
+            border-bottom: 2px solid #dc2626;
+        }
+
+        th,
+        td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #374151;
+            color: #e5e7eb;
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #9ca3af;
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .pill-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+            font-size: 11px;
+            border: 1px solid #dc2626;
+        }
+
+        .mensaje {
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .mensaje.ok {
+            color: #22c55e;
+        }
+
+        .mensaje.error {
+            color: #dc2626;
+        }
+
+        .usuarios-resumen {
+            font-size: 13px;
+        }
+
+        .usuarios-resumen b {
+            color: #ffffff;
+        }
+
+        /* Modal Stock por Depósito */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-stock {
+            background: #0a0a0a;
+            border: 2px solid #dc2626;
+            border-radius: 12px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(220, 38, 38, 0.3);
+        }
+
+        .modal-stock-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #dc2626;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-stock-header h3 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 18px;
+        }
+
+        .modal-stock-close {
+            background: transparent;
+            color: #dc2626;
+            border: 1px solid #dc2626;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-stock-close:hover {
+            background: rgba(220, 38, 38, 0.2);
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.5);
+        }
+
+        .modal-stock-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(85vh - 70px);
+        }
+
+        .stock-deposito-group {
+            margin-bottom: 24px;
+        }
+
+        .stock-deposito-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #dc2626;
+        }
+
+        .stock-deposito-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .stock-deposito-table th,
+        .stock-deposito-table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #374151;
+            color: #e5e7eb;
+        }
+
+        .stock-deposito-table th {
+            color: #9ca3af;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .stock-deposito-table tbody tr:nth-child(even) {
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        /* Sidebar en cascada */
+        .sidebar-nav {
+            margin-top: 16px;
+        }
+        .sidebar-nav-group {
+            margin-bottom: 8px;
+        }
+        .sidebar-nav-toggle {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            color: #dc2626;
+            border: 1px solid #dc2626;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .sidebar-nav-toggle:hover {
+            background: rgba(220, 38, 38, 0.2);
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+        }
+        .sidebar-nav-toggle::after {
+            content: "▼";
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .sidebar-nav-group.open .sidebar-nav-toggle::after {
+            transform: rotate(180deg);
+        }
+        .sidebar-nav-sub {
+            display: none;
+            padding-left: 12px;
+            margin-top: 6px;
+        }
+        .sidebar-nav-group.open .sidebar-nav-sub {
+            display: block;
+        }
+        .sidebar-btn {
+            width: 100%;
+            padding: 6px 12px;
+            margin-bottom: 4px;
+            background: transparent;
+            color: #e5e7eb;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        .sidebar-btn:hover {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.15);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
+        }
+        .sidebar-btn.active {
+            border-color: #dc2626;
+            background: rgba(220, 38, 38, 0.25);
+        }
+        .panel-content { display: none; }
+        .panel-content.active { display: block; }
+        .btn-master-only { display: none; }
+        .es-master .btn-master-only { display: block; }
+        .search-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: flex-end; }
+
+        /* Combobox: campo escribible con lista desplegable por similitud */
+        .combobox-wrap { position: relative; display: block; width: 100%; }
+        .combobox-wrap select.combobox-select-hidden { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .combobox-wrap .combobox-input { width: 100%; padding: 8px 12px; border: 1px solid #374151; border-radius: 6px; background: #111; color: #e5e7eb; font-size: 14px; }
+        .combobox-wrap .combobox-input:focus { outline: none; border-color: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,0.2); }
+        .combobox-wrap .combobox-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #1f2937; border: 1px solid #374151; border-radius: 6px; z-index: 1000; margin-top: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .combobox-wrap .combobox-dropdown.open { display: block; }
+        .combobox-wrap .combobox-option { display: block; width: 100%; padding: 8px 12px; text-align: left; background: transparent; border: none; color: #e5e7eb; cursor: pointer; font-size: 13px; }
+        .combobox-wrap .combobox-option:hover { background: rgba(220, 38, 38, 0.2); }
+
+        /* Estilo futurista: misma paleta, look más técnico */
+        body {
+            background: #0a0a0a;
+            background-image:
+                linear-gradient(rgba(220, 38, 38, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(220, 38, 38, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .sidebar {
+            background: linear-gradient(165deg, rgba(0,0,0,0.95), rgba(15,15,15,0.98));
+            border-right: 1px solid #dc2626;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.5), inset -1px 0 0 rgba(220, 38, 38, 0.15);
+        }
+        .sidebar h1 {
+            letter-spacing: 0.02em;
+            text-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+        }
+        .badge, .pill {
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+        }
+        .badge-dot {
+            box-shadow: 0 0 8px #dc2626;
+        }
+        .sidebar-label {
+            letter-spacing: 0.12em;
+            color: #b1b5bb;
+        }
+        .sidebar-nav-toggle {
+            border-radius: 6px;
+            letter-spacing: 0.03em;
+            box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+        }
+        .sidebar-nav-toggle:hover {
+            box-shadow: 0 0 16px rgba(220, 38, 38, 0.5), inset 0 0 12px rgba(220, 38, 38, 0.08);
+        }
+        .sidebar-btn {
+            border-radius: 6px;
+            letter-spacing: 0.02em;
+        }
+        .sidebar-btn:hover {
+            box-shadow: 0 0 14px rgba(220, 38, 38, 0.4), inset 0 0 8px rgba(220, 38, 38, 0.06);
+        }
+        .sidebar-btn.active {
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.35), inset 0 0 10px rgba(220, 38, 38, 0.1);
+        }
+        .content {
+            position: relative;
+        }
+        .content::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(180deg, transparent 0%, rgba(220, 38, 38, 0.02) 100%);
+        }
+        .card {
+            background: rgba(17, 17, 17, 0.9);
+            border: 1px solid #dc2626;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(220, 38, 38, 0.1);
+        }
+        .card:hover {
+            box-shadow: 0 0 24px rgba(220, 38, 38, 0.15), 0 0 0 1px rgba(220, 38, 38, 0.2);
+        }
+        .content-title h2 {
+            letter-spacing: 0.02em;
+        }
+        button:hover {
+            box-shadow: 0 0 18px rgba(220, 38, 38, 0.55);
+        }
+        input:focus, select:focus {
+            box-shadow: 0 0 18px rgba(220, 38, 38, 0.4);
+        }
+        .modal-stock {
+            box-shadow: 0 0 50px rgba(220, 38, 38, 0.25), 0 0 0 1px rgba(220, 38, 38, 0.2);
+        }
+        thead {
+            box-shadow: 0 1px 0 0 rgba(220, 38, 38, 0.3);
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #dc2626;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <h1>Inventario Local</h1>
+            <p>Control de productos y existencias.</p>
+            <div class="badge"><span class="badge-dot"></span> Servidor en ejecución</div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-nav-group nav-usuarios">
+                    <button type="button" class="sidebar-nav-toggle">Usuarios</button>
+                    <div class="sidebar-nav-sub">
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('crear-usuario', event)">Crear usuario</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('ver-usuarios', event)">Ver usuarios</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('editar-usuarios', event)">Editar usuarios</button>
+            </div>
+            </div>
+                <div class="sidebar-nav-group nav-inventario">
+                    <button type="button" class="sidebar-nav-toggle">Inventario - Crear</button>
+                    <div class="sidebar-nav-sub">
+                        <button type="button" class="sidebar-btn" onclick="mostrarPanel('crear-item', event)">Crear ítem</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('crear-categoria', event)">Crear categoría</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('crear-deposito', event)">Crear depósito</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('editar-categorias', event)">Editar / borrar categorías</button>
+                        <button type="button" class="sidebar-btn btn-master-only" onclick="mostrarPanel('editar-depositos', event)">Editar / borrar depósitos</button>
+                </div>
+            </div>
+                <div class="sidebar-nav-group nav-movimientos">
+                    <button type="button" class="sidebar-nav-toggle">Movimientos</button>
+                    <div class="sidebar-nav-sub">
+                        <button type="button" class="sidebar-btn btn-nav-mover-items" onclick="mostrarPanel('mover-items', event)">Mover ítems</button>
+                        <button type="button" class="sidebar-btn btn-nav-ver-movimientos" onclick="mostrarPanel('ver-movimientos', event)">Ver movimientos</button>
+                        <button type="button" class="sidebar-btn btn-master-only btn-nav-editar-items" onclick="mostrarPanel('editar-items', event)">Editar ítems</button>
+                        <button type="button" class="sidebar-btn btn-master-only btn-nav-ver-todos" onclick="mostrarPanel('ver-todos-movimientos', event)">Ver todos los movimientos</button>
+                        <button type="button" class="sidebar-btn btn-nav-buscar-items" onclick="mostrarPanel('buscar-items', event)">Buscar ítems</button>
+                    </div>
+                </div>
+                <div class="sidebar-nav-group">
+                    <button type="button" class="sidebar-btn" style="margin-top:8px;" onclick="mostrarPanel('ver-stock', event)">Ver stock actual</button>
+                    <button type="button" class="sidebar-btn" onclick="mostrarPanel('ver-lista-items', event)">Ver lista de ítems</button>
+                </div>
+                <div class="sidebar-nav-group">
+                    <button type="button" class="sidebar-btn" onclick="mostrarPanel('cargar-inventario', event)">Cargar inventario</button>
+                </div>
+            </nav>
+        </aside>
+
+        <div id="modal-stock-deposito" class="modal-overlay" role="dialog">
+            <div class="modal-stock">
+                <div class="modal-stock-header">
+                    <h3>Stock por Depósito</h3>
+                    <button type="button" class="modal-stock-close" onclick="cerrarModalStockPorDeposito()">Cerrar</button>
+                </div>
+                <div class="modal-stock-body" id="modal-stock-body">
+                    <p style="color:#9ca3af;">Cargando...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="modal-historial-item" class="modal-overlay" role="dialog">
+            <div class="modal-stock">
+                <div class="modal-stock-header">
+                    <h3 id="modal-historial-titulo">Historial de movimientos</h3>
+                    <button type="button" class="modal-stock-close" onclick="cerrarModalHistorialItem()">Cerrar</button>
+                </div>
+                <div class="modal-stock-body" id="modal-historial-body">
+                    <p style="color:#9ca3af;">Cargando...</p>
+                </div>
+            </div>
+        </div>
+
+        <main class="content">
+            <header class="content-header">
+                <div class="content-title">
+                    <h2>Panel de Inventario</h2>
+                    <span>Agrega usuarios, crea productos y consulta existencias por depósito.</span>
+                </div>
+                <div class="chip-row">
+                    <div class="chip">Base de datos: inventario_local</div>
+                    <div class="chip">Depósito central ID: 1</div>
+                    <div class="user-menu-wrap">
+                        <button type="button" class="user-menu-btn" id="user-menu-btn" onclick="toggleUserMenu()" aria-expanded="false">
+                            <span id="chip-usuario">Usuario: ...</span>
+                            <span aria-hidden="true">▼</span>
+                        </button>
+                        <div class="user-menu-dropdown" id="user-menu-dropdown">
+                            <button type="button" onclick="cerrarMenuUsuario(); mostrarPanel('cambiar-password', event)">Cambiar contraseña</button>
+                            <button type="button" onclick="cerrarMenuUsuario(); logout()">Cerrar sesión</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="panel-crear-usuario" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Crear usuario (ficha completa)</div>
+                            <div class="card-subtitle">Datos personales, credenciales (alias + contraseña), rol y depósito.</div>
+                        </div>
+                        <span class="tag">Usuarios</span>
+                    </div>
+                    <form id="form-usuario">
+                        <div class="field-group">
+                            <div class="field">
+                                <label for="usuario-nombre">Nombre</label>
+                                <input id="usuario-nombre" type="text" name="nombre" placeholder="ej: Juan">
+                            </div>
+                            <div class="field">
+                                <label for="usuario-apellido">Apellido</label>
+                                <input id="usuario-apellido" type="text" name="apellido" placeholder="ej: García">
+                            </div>
+                            <div class="field">
+                                <label for="usuario-departamento">Departamento</label>
+                                <input id="usuario-departamento" type="text" name="departamento" placeholder="ej: TI">
+                            </div>
+                            <div class="field">
+                                <label for="usuario-ciudad">Ciudad</label>
+                                <input id="usuario-ciudad" type="text" name="ciudad" placeholder="ej: Lima">
+                            </div>
+                            <div class="field">
+                                <label for="usuario-telefono">Teléfono</label>
+                                <input id="usuario-telefono" type="text" name="telefono" placeholder="ej: 999888777">
+                            </div>
+                            <hr style="border-color:#374151;margin:12px 0;">
+                            <div class="field">
+                                <label for="username">Alias (usuario para ingresar)</label>
+                                <input id="username" type="text" name="username" placeholder="ej: jgarcia" required>
+                            </div>
+                            <div class="field">
+                                <label for="password">Contraseña</label>
+                                <input id="password" type="password" name="password" placeholder="Alfanumérica (letras y números), mínimo 4 caracteres" required minlength="4" pattern="[a-zA-Z0-9]+" title="Solo letras y números" autocomplete="new-password">
+                            </div>
+                            <div class="field">
+                                <label for="rol_id">Rol</label>
+                                <select id="rol_id" name="rol_id" required>
+                                    <option value="">Selecciona un rol...</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="usuario-deposito">Depósito asignado</label>
+                                <select id="usuario-deposito" name="deposito_asignado_id">
+                                    <option value="">(Sin asignar)</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Depósitos adicionales permitidos (solo master)</label>
+                                <div class="search-row">
+                                    <select id="usuario-deposito-extra">
+                                        <option value="">Agregar depósito permitido...</option>
+                                    </select>
+                                    <button type="button" onclick="agregarDepositoExtra()">Agregar</button>
+                                </div>
+                                <div id="usuario-depositos-extra-list"></div>
+                            </div>
+                        </div>
+                        <div class="meta-row">
+                            <span>Credenciales: alias y contraseña.</span>
+                            <button type="submit">Guardar usuario</button>
+                        </div>
+                        <div id="mensaje-usuario" class="mensaje"></div>
+                    </form>
+                </section>
+            </div>
+
+            <div id="panel-ver-usuarios" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Lista de usuarios</div>
+                        <div class="card-subtitle">Usuarios del sistema con sus fichas.</div>
+                    </div>
+                    <table id="tabla-usuarios">
+                        <thead><tr><th>ID</th><th>Alias</th><th>Nombre</th><th>Apellido</th><th>Departamento</th><th>Rol</th><th>Depósito</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <div id="panel-editar-usuarios" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Editar usuarios</div>
+                        <div class="card-subtitle">Selecciona el usuario a editar.</div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field">
+                            <label>Usuarios</label>
+                            <input id="buscar-usuario-editar" type="text" placeholder="Buscar por ID, alias o nombre" style="margin-bottom:6px;">
+                            <div id="lista-usuarios-editar"></div>
+                        </div>
+                    </div>
+                    <div id="form-editar-usuario-wrap" style="display:none; margin-top:16px;"></div>
+                </section>
+            </div>
+
+            <div id="panel-editar-items" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Editar / borrar ítems</div>
+                        <div class="card-subtitle">Selecciona un ítem para editar o borrar.</div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field">
+                            <label>Ítems</label>
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                                <input id="buscar-item-editar" type="text" placeholder="Buscar por ID, código o nombre" style="flex:1;min-width:200px;">
+                                <label style="display:flex;align-items:center;gap:6px;margin:0;"><input type="checkbox" id="solo-componentes-editar"> Solo componentes</label>
+                            </div>
+                            <div id="lista-items-editar"></div>
+                        </div>
+                    </div>
+                    <div id="form-editar-item-wrap" style="display:none; margin-top:16px;"></div>
+                </section>
+            </div>
+
+            <div id="panel-crear-item" class="panel-content">
+                <section class="card" id="card-producto">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Nuevo producto</div>
+                            <div class="card-subtitle">Define categoría, depósito de origen y stock inicial.</div>
+                        </div>
+                        <span class="tag">Alta de ítems</span>
+                    </div>
+
+                    <form id="form-producto">
+                        <div class="field-group">
+                            <div class="field">
+                                <label for="nombre-producto">Nombre del producto</label>
+                                <input id="nombre-producto" type="text" name="nombre" placeholder="ej: Toner HP 12A" list="datalist-nombres-items" autocomplete="off" required>
+                                <datalist id="datalist-nombres-items"></datalist>
+                            </div>
+                            <div class="field">
+                                <label for="observacion-producto">Observación</label>
+                                <input id="observacion-producto" type="text" name="observacion" placeholder="Notas internas, modelo, serie, etc.">
+                            </div>
+                            <div class="field">
+                                <label for="cantidad-inicial">Cantidad inicial</label>
+                                <input id="cantidad-inicial" type="number" name="cantidad_inicial" min="0" step="1" value="0">
+                            </div>
+                            <div class="field">
+                                <label for="categoria-producto">Categoría</label>
+                                <select id="categoria-producto" name="categoria_id" required>
+                                    <option value="">Selecciona una categoría...</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="deposito-producto">Depósito de origen</label>
+                                <select id="deposito-producto" name="deposito_id" required>
+                                    <option value="">Selecciona un depósito...</option>
+                                </select>
+                            </div>
+                            <div id="wrap-detalle-componentes" class="field-group">
+                                <label>Componentes (ítem y cantidad por fila)</label>
+                                <p class="mensaje" style="font-size:12px;margin-bottom:8px;">Los componentes se crearán con categoría "componentes" y quedarán vinculados a este ítem, en el mismo depósito.</p>
+                                <table id="tabla-componentes-crear" style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+                                    <thead><tr><th style="text-align:left;">Ítem</th><th style="text-align:left;width:100px;">Cantidad</th><th style="width:60px;"></th></tr></thead>
+                                    <tbody id="tbody-componentes-crear"></tbody>
+                                </table>
+                                <button type="button" class="sidebar-btn" onclick="anadirFilaComponente()">Añadir componente</button>
+                            </div>
+                        </div>
+                        <div class="meta-row">
+                            <span>Se crea con el stock inicial indicado y código automático según la categoría.</span>
+                            <button type="submit">
+                                <span>Crear producto</span>
+                            </button>
+                        </div>
+                        <div id="mensaje-producto" class="mensaje"></div>
+                    </form>
+                </section>
+            </div>
+
+            <div id="panel-crear-categoria" class="panel-content">
+                <section class="card" id="card-categoria">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Nueva categoría</div>
+                            <div class="card-subtitle">Agrupa productos por tipo (ej: Insumos, Repuestos).</div>
+                        </div>
+                        <span class="tag">Catálogo</span>
+                    </div>
+
+                    <form id="form-categoria">
+                        <div class="field-group">
+                            <div class="field">
+                                <label for="nombre-categoria">Nombre de la categoría (mayúsculas)</label>
+                                <input id="nombre-categoria" type="text" name="nombre" placeholder="ej: IMPRESORAS" style="text-transform:uppercase;" required>
+                            </div>
+                            <div class="field">
+                                <label for="abreviatura-categoria">Abreviatura (para el código, máx. 5 caracteres, mayúsculas)</label>
+                                <input id="abreviatura-categoria" type="text" name="abreviatura" placeholder="ej: IMP" maxlength="5" style="text-transform:uppercase;" required>
+                            </div>
+                        </div>
+                        <div class="meta-row">
+                            <span>Se usará para generar códigos del tipo <b>IMP-001</b>.</span>
+                            <button type="submit">
+                                <span>Crear categoría</span>
+                            </button>
+                        </div>
+                        <div id="mensaje-categoria" class="mensaje"></div>
+                    </form>
+                </section>
+            </div>
+
+            <div id="panel-crear-deposito" class="panel-content">
+                <section class="card" id="card-deposito">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Nuevo depósito</div>
+                            <div class="card-subtitle">Define ubicaciones físicas para el stock.</div>
+                        </div>
+                        <span class="tag">Ubicaciones</span>
+                    </div>
+
+                    <form id="form-deposito">
+                        <div class="field-group">
+                            <div class="field">
+                                <label for="nombre-deposito">Nombre del depósito</label>
+                                <input id="nombre-deposito" type="text" name="nombre" placeholder="ej: Depósito Central" required>
+                            </div>
+                            <div class="field">
+                                <label for="ubicacion-deposito">Ubicación</label>
+                                <input id="ubicacion-deposito" type="text" name="ubicacion" placeholder="ej: Planta baja, ala norte">
+                            </div>
+                        </div>
+                        <div class="meta-row">
+                            <span>Se podrá usar como origen y destino de movimientos.</span>
+                            <button type="submit">
+                                <span>Crear depósito</span>
+                            </button>
+                        </div>
+                        <div id="mensaje-deposito" class="mensaje"></div>
+                    </form>
+                </section>
+            </div>
+
+            <div id="panel-editar-categorias" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Editar / borrar categorías</div>
+                        <div class="card-subtitle">Selecciona una categoría para editar o borrar (solo master).</div>
+                    </div>
+                    <div id="lista-categorias-editar"></div>
+                    <div id="form-editar-categoria-wrap" style="display:none; margin-top:16px;"></div>
+                </section>
+            </div>
+
+            <div id="panel-editar-depositos" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Editar / borrar depósitos</div>
+                        <div class="card-subtitle">Selecciona un depósito para editar o borrar (solo master).</div>
+                    </div>
+                    <div id="lista-depositos-editar"></div>
+                    <div id="form-editar-deposito-wrap" style="display:none; margin-top:16px;"></div>
+                </section>
+            </div>
+
+            <div id="panel-ver-stock" class="panel-content active">
+                <section class="card" style="margin-top:0;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Stock actual - Inventario por depósito</div>
+                        <div class="card-subtitle">Lista de existencias por depósito. Solo stock, no movimientos.</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn-secondary" onclick="cargarInventario()">Actualizar</button>
+                        <button type="button" class="btn-secondary" onclick="exportarExcel()">Exportar a Excel</button>
+                    </div>
+                </div>
+                <div class="search-row" id="inventario-filtro-wrap">
+                    <div class="field">
+                        <label for="inventario-filtro-deposito">Filtrar por depósito</label>
+                        <select id="inventario-filtro-deposito">
+                            <option value="">Todos los depósitos</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>&nbsp;</label>
+                        <button type="button" onclick="cargarInventario()">Filtrar</button>
+                    </div>
+                </div>
+
+                <table id="tabla-inventario">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Item</th>
+                            <th>Depósito</th>
+                            <th>Cantidad</th>
+                            <th>Códigos</th>
+                            <th>Componentes</th>
+                            <th>Historial</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+
+                <div class="meta-row">
+                    <span>Stock actual de productos por depósito.</span>
+                    <span class="pill-small">
+                        <span class="status-dot"></span>
+                        Datos desde /inventario
+                    </span>
+                </div>
+            </section>
+            </div>
+
+            <div id="panel-ver-lista-items" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Lista de ítems</div>
+                            <div class="card-subtitle">Todos los ítems del sistema por código y nombre.</div>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="cargarListaItemsVer()">Actualizar</button>
+                    </div>
+                    <div class="field-group" style="margin-bottom:12px;">
+                        <div class="field">
+                            <label for="buscar-lista-items">Buscar por código o nombre</label>
+                            <input id="buscar-lista-items" type="text" placeholder="Escriba para filtrar..." style="max-width:280px;">
+                        </div>
+                    </div>
+                    <table id="tabla-lista-items" class="stock-deposito-table">
+                        <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Observación</th><th></th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <div id="panel-mover-items" class="panel-content">
+                <section class="card">
+                <div class="card-header">
+                    <div>
+                            <div class="card-title">Mover ítems - Transferencias entre depósitos</div>
+                        <div class="card-subtitle">Mueve stock de un depósito a otro y deja trazabilidad en movimientos.</div>
+                    </div>
+                    <span class="tag">Movimientos</span>
+                </div>
+
+                <form id="form-transferencia">
+                    <div class="field-group">
+                        <div class="field">
+                                <label for="transfer-codigo">Código del item</label>
+                                <input id="transfer-codigo" type="text" name="item_codigo" placeholder="ej: IMP-0001" required>
+                        </div>
+                        <div class="field">
+                            <label for="transfer-origen">Depósito origen</label>
+                            <select id="transfer-origen" name="deposito_origen_id" required>
+                                <option value="">Selecciona un depósito...</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="transfer-destino">Depósito destino</label>
+                            <select id="transfer-destino" name="deposito_destino_id" required>
+                                <option value="">Selecciona un depósito...</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="transfer-cantidad">Cantidad a transferir</label>
+                            <input id="transfer-cantidad" type="number" name="cantidad" min="1" step="1" required>
+                        </div>
+                        <div class="field">
+                            <label for="transfer-observacion">Observación</label>
+                            <input id="transfer-observacion" type="text" name="observacion" placeholder="Motivo del movimiento, referencia, etc.">
+                        </div>
+                    </div>
+                    <div class="meta-row">
+                        <span>El stock se descuenta del origen y se suma al destino.</span>
+                        <button type="submit">
+                            <span>Registrar transferencia</span>
+                        </button>
+                    </div>
+                    <div id="mensaje-transferencia" class="mensaje"></div>
+                </form>
+            </section>
+            </div>
+
+            <div id="panel-ver-movimientos" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Ver movimientos</div>
+                            <div class="card-subtitle">Cada filtro es opcional e independiente: use solo el que necesite (código/ítem, usuario o fechas).</div>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="cargarHistorialMovimientos()">Actualizar</button>
+                    </div>
+                    <div class="search-row" style="flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                        <div class="field">
+                            <label for="movimientos-filtro-codigo">Código o ítem</label>
+                            <input id="movimientos-filtro-codigo" type="text" placeholder="ej: IMP-0001 o impresora">
+                        </div>
+                        <div class="field">
+                            <label for="movimientos-filtro-usuario">Usuario</label>
+                            <input id="movimientos-filtro-usuario" type="text" placeholder="nombre de usuario">
+                        </div>
+                        <div class="field">
+                            <label for="movimientos-filtro-fecha-desde">Fecha desde</label>
+                            <input id="movimientos-filtro-fecha-desde" type="date">
+                        </div>
+                        <div class="field">
+                            <label for="movimientos-filtro-fecha-hasta">Fecha hasta</label>
+                            <input id="movimientos-filtro-fecha-hasta" type="date">
+                        </div>
+                        <div class="field" style="align-self:flex-end;">
+                            <label>&nbsp;</label>
+                            <button type="button" onclick="cargarHistorialMovimientos()">Buscar</button>
+                        </div>
+                        <div class="field" style="align-self:flex-end;">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn-secondary" onclick="limpiarFiltrosMovimientos()">Limpiar</button>
+                        </div>
+                    </div>
+                    <table id="tabla-movimientos">
+                        <thead>
+                            <tr>
+                                <th>Código ítem</th>
+                                <th>Ítem</th>
+                                <th>Movimiento</th>
+                                <th>Fecha y hora</th>
+                                <th>Cantidad</th>
+                                <th>Observación</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <div id="panel-ver-todos-movimientos" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Todos los movimientos (Master)</div>
+                            <div class="card-subtitle">Historial completo de movimientos en todos los depósitos.</div>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="cargarHistorialTodosMovimientos()">Actualizar</button>
+                    </div>
+                    <table id="tabla-movimientos-todos">
+                        <thead><tr><th>Código ítem</th><th>Ítem</th><th>Movimiento</th><th>Fecha y hora</th><th>Cantidad</th><th>Observación</th><th>Usuario</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <div id="panel-cargar-inventario" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Cargar inventario</div>
+                        <div class="card-subtitle">Depósito de origen y ítems a crear. Añade líneas y guarda con doble confirmación.</div>
+                    </div>
+                    <div class="field-group">
+                        <div class="field">
+                            <label for="cargar-inventario-deposito">Depósito de origen</label>
+                            <select id="cargar-inventario-deposito" required>
+                                <option value="">Selecciona depósito...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;">
+                        <div class="card-subtitle" style="margin-bottom:8px;">Cada unidad genera un código único. Nombre, categoría y cantidad (unidades = códigos a crear).</div>
+                        <table class="stock-deposito-table" id="tabla-lineas-inventario">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Unidades</th>
+                                    <th>Observación</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-lineas-inventario"></tbody>
+                        </table>
+                        <button type="button" class="btn-secondary" style="margin-top:8px;" onclick="anadirLineaCargarInventario()">Añadir ítem</button>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <button type="button" onclick="guardarInventarioConConfirmacion()">Guardar inventario</button>
+                        <span id="mensaje-cargar-inventario" class="mensaje" style="margin-left:12px;"></span>
+                    </div>
+                </section>
+            </div>
+
+            <div id="panel-buscar-items" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Buscar ítem por código</div>
+                        <div class="card-subtitle">Ingresa el código para ver todos los movimientos del ítem.</div>
+                    </div>
+                    <div class="search-row">
+                        <div class="field">
+                            <label for="buscar-codigo">Código del ítem</label>
+                            <input id="buscar-codigo" type="text" placeholder="ej: IMP-0001">
+                        </div>
+                        <button type="button" onclick="buscarMovimientosItem()">Buscar</button>
+                    </div>
+                    <div id="resultado-busqueda-items"></div>
+                </section>
+            </div>
+
+            <div id="panel-cambiar-password" class="panel-content">
+                <section class="card">
+                    <div class="card-header">
+                        <div class="card-title">Cambiar mi contraseña</div>
+                        <div class="card-subtitle">Ingresa tu contraseña actual y la nueva.</div>
+                    </div>
+                    <form id="form-cambiar-password" onsubmit="cambiarPassword(event)">
+                        <div class="field-group">
+                            <div class="field">
+                                <label for="password-actual">Contraseña actual</label>
+                                <input id="password-actual" type="password" required>
+                            </div>
+                            <div class="field">
+                                <label for="password-nueva">Nueva contraseña</label>
+                                <input id="password-nueva" type="password" placeholder="Alfanumérica, mínimo 4 caracteres" required minlength="4" pattern="[a-zA-Z0-9]+" title="Solo letras y números" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <button type="submit">Cambiar contraseña</button>
+                        <div id="mensaje-cambiar-password" class="mensaje"></div>
+                    </form>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function fetchJson(url) {
+            const res = await fetch(url);
+            if (res.status === 401) {
+                window.location.href = '/login';
+                throw new Error('No autenticado');
+            }
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || 'Error');
+            }
+            return await res.json();
+        }
+
+        async function logout() {
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        fetchJson('/me')
+            .then(me => {
+                const chip = document.getElementById('chip-usuario');
+                if (chip) chip.textContent = me.username ? `${me.username} (${me.rol_nombre || ''})` : 'Usuario';
+
+                const rol = String(me.rol_nombre || '').toLowerCase();
+                const esMaster = rol === 'master' || rol === 'god';
+                const esAdmin = rol === 'admin' || esMaster;
+                let depositosPermitidos = Array.isArray(me.depositos_permitidos) ? me.depositos_permitidos : [];
+                if (depositosPermitidos.length === 0 && me.deposito_asignado_id) depositosPermitidos = [me.deposito_asignado_id];
+                window.usuarioPermisos = { esMaster, esAdmin, depositosPermitidos, depositoAsignadoId: me.deposito_asignado_id };
+
+                const sidebar = document.querySelector('.sidebar');
+                if (esMaster && sidebar) sidebar.classList.add('es-master');
+
+                // Solo master ve Usuarios; Inventario - Crear lo ven todos (Crear ítem); categoría/depósito solo master
+                if (!esMaster) {
+                    document.querySelectorAll('.nav-usuarios').forEach(g => {
+                        if (g) g.style.display = 'none';
+                    });
+                }
+
+                // Operador ve: Mover ítems, Buscar ítems, Ver movimientos, Ver stock (no Editar ítems ni Ver todos)
+                // Filtro por depósito visible para todos los usuarios en Ver stock actual
+                cargarDepositos();
+                var params = new URLSearchParams(window.location.search);
+                var codigoUrl = params.get('codigo');
+                if (codigoUrl && codigoUrl.trim()) {
+                    setTimeout(function() { abrirHistorialItem(codigoUrl.trim()); }, 300);
+                    if (window.history.replaceState) window.history.replaceState({}, '', window.location.pathname || '/');
+                }
+            })
+            .catch(() => {});
+
+        document.querySelectorAll('.sidebar-nav-toggle').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.closest('.sidebar-nav-group').classList.toggle('open');
+            });
+        });
+
+        function mostrarPanel(panelId, ev) {
+            document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+            const panel = document.getElementById('panel-' + panelId);
+            if (panel) panel.classList.add('active');
+            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+            if (ev && ev.target) ev.target.closest('.sidebar-btn')?.classList.add('active');
+            if (panelId === 'ver-usuarios') cargarTablaUsuarios();
+            if (panelId === 'ver-todos-movimientos') cargarHistorialTodosMovimientos();
+            if (panelId === 'editar-usuarios') cargarListaUsuariosEditar();
+            if (panelId === 'editar-items') cargarListaItemsEditar();
+            if (panelId === 'editar-categorias') cargarListaCategoriasEditar();
+            if (panelId === 'editar-depositos') cargarListaDepositosEditar();
+            if (panelId === 'cargar-inventario') { cargarCategoriasParaInventario(); cargarNombresItemsParaAutocompletar(); if (!document.querySelector('#tbody-lineas-inventario tr')) anadirLineaCargarInventario(); }
+            if (panelId === 'crear-item') cargarNombresItemsParaAutocompletar();
+            if (panelId === 'ver-lista-items') cargarListaItemsVer();
+            if (panelId === 'ver-stock') {
+                cargarDepositos();
+                document.querySelector('#tabla-inventario tbody').innerHTML = '';
+                var msgInv = document.getElementById('mensaje-inventario-vacio');
+                if (msgInv) msgInv.remove();
+                var wrap = document.getElementById('inventario-filtro-wrap');
+                if (wrap && !document.getElementById('mensaje-inventario-vacio')) {
+                    var p = document.createElement('p');
+                    p.id = 'mensaje-inventario-vacio';
+                    p.className = 'mensaje';
+                    p.style.color = '#9ca3af';
+                    p.style.marginTop = '12px';
+                    p.textContent = 'Seleccione un depósito y pulse Filtrar para cargar el stock.';
+                    wrap.after(p);
+                }
+            }
+        }
+
+        function toggleUserMenu() {
+            var dd = document.getElementById('user-menu-dropdown');
+            if (!dd) return;
+            dd.classList.toggle('open');
+            document.getElementById('user-menu-btn')?.setAttribute('aria-expanded', dd.classList.contains('open'));
+        }
+        function cerrarMenuUsuario() {
+            var dd = document.getElementById('user-menu-dropdown');
+            if (dd) dd.classList.remove('open');
+            document.getElementById('user-menu-btn')?.setAttribute('aria-expanded', 'false');
+        }
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-menu-wrap')) cerrarMenuUsuario();
+        });
+
+        function cargarTablaUsuarios() {
+            Promise.all([fetchJson('/usuarios'), fetchJson('/depositos')])
+                .then(([data, depositos]) => {
+                    const tbody = document.querySelector('#tabla-usuarios tbody');
+                    tbody.innerHTML = '';
+                    data.forEach(u => {
+                        let dep = u.deposito_nombre;
+                        if (!dep && u.deposito_asignado_id) {
+                            const d = depositos.find(x => x.id == u.deposito_asignado_id);
+                            dep = d ? d.nombre : 'ID ' + u.deposito_asignado_id;
+                        }
+                        if (!dep) dep = '-';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${u.id}</td><td>${escapeHtml(u.username)}</td><td>${escapeHtml(u.nombre||'')}</td><td>${escapeHtml(u.apellido||'')}</td><td>${escapeHtml(u.departamento||'')}</td><td>${escapeHtml(u.rol_nombre||'')}</td><td>${escapeHtml(dep)}</td><td><button type="button" class="sidebar-btn" style="padding:4px 8px;font-size:11px;" onclick="verFichaUsuario(${u.id}, event)">Ver ficha</button></td>`;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+
+        var listaItemsVerCache = [];
+        var categoriasListaItemsCache = [];
+        function renderListaItemsVer(items, categorias) {
+            var catMap = {};
+            (categorias || []).forEach(function(c) { catMap[c.id] = c.nombre || c.abreviatura || ''; });
+            var filtro = (document.getElementById('buscar-lista-items') && document.getElementById('buscar-lista-items').value || '').trim().toLowerCase();
+            var filtrados = filtro ? (items || []).filter(function(i) {
+                var cod = (i.codigo_interno || '').toLowerCase();
+                var nom = (i.nombre || '').toLowerCase();
+                return cod.indexOf(filtro) !== -1 || nom.indexOf(filtro) !== -1;
+            }) : (items || []);
+            var tbody = document.querySelector('#tabla-lista-items tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            filtrados.forEach(function(i) {
+                var tr = document.createElement('tr');
+                var catNombre = catMap[i.categoria_id] || '-';
+                var codigo = (i.codigo_interno || '-').toString();
+                var codigoAttr = codigo.replace(/"/g, '&quot;');
+                tr.innerHTML = '<td>' + escapeHtml(codigo) + '</td><td>' + escapeHtml(i.nombre || '') + '</td><td>' + escapeHtml(catNombre) + '</td><td>' + escapeHtml(i.observacion || '') + '</td><td><button type="button" class="sidebar-btn" style="padding:4px 8px;font-size:11px;" data-codigo="' + codigoAttr + '" onclick="abrirHistorialItem(this.getAttribute(\'data-codigo\'))">Ver historial</button></td>';
+                tbody.appendChild(tr);
+            });
+        }
+        function cargarListaItemsVer() {
+            Promise.all([fetchJson('/items'), fetchJson('/categorias')])
+                .then(function(res) {
+                    listaItemsVerCache = res[0] || [];
+                    categoriasListaItemsCache = res[1] || [];
+                    renderListaItemsVer(listaItemsVerCache, categoriasListaItemsCache);
+                })
+                .catch(function(err) { console.error('Error al cargar lista de ítems', err); });
+        }
+
+        function cargarHistorialTodosMovimientos() {
+            fetchJson('/movimientos-historial-todos')
+                .then(data => {
+                    const tbody = document.querySelector('#tabla-movimientos-todos tbody');
+                    tbody.innerHTML = '';
+                    data.forEach(mov => {
+                        const tr = document.createElement('tr');
+                        const codigo = escapeHtml(mov.codigo_interno || '-');
+                        const itemNombre = escapeHtml(mov.item_nombre || '-');
+                        const movimiento = escapeHtml((mov.deposito_origen_nombre || '') + ' → ' + (mov.deposito_destino_nombre || ''));
+                        const usuario = escapeHtml(mov.usuario_username || '-');
+                        tr.innerHTML = `<td>${codigo}</td><td>${itemNombre}</td><td>${movimiento}</td><td>${formatoFechaHora(mov.created_at)}</td><td>${mov.cantidad}</td><td>${escapeHtml(mov.observacion||'')}</td><td>${usuario}</td>`;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+
+        function buscarMovimientosEnStock() {
+            const codigo = document.getElementById('stock-buscar-codigo').value.trim();
+            const div = document.getElementById('resultado-stock-busqueda');
+            if (!codigo) { div.innerHTML = '<p class="mensaje">Ingresa un código.</p>'; return; }
+            div.innerHTML = '<p style="color:#9ca3af;">Buscando...</p>';
+            fetchJson(`/movimientos-por-item?codigo=${encodeURIComponent(codigo)}`)
+                .then(data => {
+                    if (data.length === 0) { div.innerHTML = '<p class="mensaje">Sin movimientos para ese código.</p>'; return; }
+                    let html = '<div class="stock-deposito-title">Movimientos de ' + escapeHtml(codigo) + '</div><table class="stock-deposito-table"><thead><tr><th>Movimiento</th><th>Fecha y hora</th><th>Cantidad</th><th>Observación</th></tr></thead><tbody>';
+                    data.forEach(m => {
+                        const mov = escapeHtml((m.deposito_origen_nombre||'') + ' → ' + (m.deposito_destino_nombre||''));
+                        html += `<tr><td>${mov}</td><td>${formatoFechaHora(m.created_at)}</td><td>${m.cantidad}</td><td>${escapeHtml(m.observacion||'')}</td></tr>`;
+                    });
+                    div.innerHTML = html + '</tbody></table>';
+                })
+                .catch(err => { div.innerHTML = `<p class="mensaje error">${escapeHtml(err.message)}</p>`; });
+        }
+
+        function buscarMovimientosItem() {
+            const codigo = document.getElementById('buscar-codigo').value.trim();
+            const div = document.getElementById('resultado-busqueda-items');
+            if (!codigo) { div.innerHTML = '<p class="mensaje">Ingresa un código.</p>'; return; }
+            div.innerHTML = '<p style="color:#9ca3af;">Buscando...</p>';
+            fetchJson(`/movimientos-por-item?codigo=${encodeURIComponent(codigo)}`)
+                .then(data => {
+                    if (data.length === 0) { div.innerHTML = '<p class="mensaje">Sin movimientos para ese código.</p>'; return; }
+                    let html = '<table class="stock-deposito-table"><thead><tr><th>Movimiento</th><th>Fecha y hora</th><th>Cantidad</th><th>Observación</th></tr></thead><tbody>';
+                    data.forEach(m => {
+                        const mov = escapeHtml((m.deposito_origen_nombre||'') + ' → ' + (m.deposito_destino_nombre||''));
+                        html += `<tr><td>${mov}</td><td>${formatoFechaHora(m.created_at)}</td><td>${m.cantidad}</td><td>${escapeHtml(m.observacion||'')}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    div.innerHTML = html;
+                })
+                .catch(err => { div.innerHTML = `<p class="mensaje error">${escapeHtml(err.message)}</p>`; });
+        }
+
+        function cambiarPassword(e) {
+            e.preventDefault();
+            const msg = document.getElementById('mensaje-cambiar-password');
+            fetch('/usuarios/cambiar-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    password_actual: document.getElementById('password-actual').value,
+                    password_nueva: document.getElementById('password-nueva').value
+                })
+            })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    msg.textContent = 'Contraseña cambiada correctamente';
+                    msg.className = 'mensaje ok';
+                    document.getElementById('form-cambiar-password').reset();
+                })
+                .catch(err => { msg.textContent = err.message; msg.className = 'mensaje error'; });
+        }
+
+        function cargarListaUsuariosEditar() {
+            const div = document.getElementById('lista-usuarios-editar');
+            if (!div) return;
+
+        fetchJson('/usuarios')
+            .then(data => {
+                    const filtroInput = document.getElementById('buscar-usuario-editar');
+                    const term = filtroInput ? filtroInput.value.trim().toLowerCase() : '';
+
+                    const filtrados = term
+                        ? data.filter(u => {
+                            const idStr = String(u.id || '');
+                            const alias = String(u.username || '').toLowerCase();
+                            const nombre = String(u.nombre || '').toLowerCase();
+                            const apellido = String(u.apellido || '').toLowerCase();
+                            return (
+                                idStr.includes(term) ||
+                                alias.includes(term) ||
+                                (nombre + ' ' + apellido).includes(term)
+                            );
+                        })
+                        : data;
+
+                    if (filtrados.length === 0) {
+                        div.innerHTML = '<p class="mensaje">Sin resultados</p>';
+                        return;
+                    }
+
+                    div.innerHTML = filtrados.map(u => {
+                        const label = `${u.id} - ${u.username || ''}`;
+                        return `<button type="button" class="sidebar-btn" style="margin-right:6px;margin-bottom:4px;" onclick="abrirEditarUsuario(${u.id})">${escapeHtml(label)}</button>`;
+                    }).join('');
+                })
+                .catch(() => { div.innerHTML = 'Error al cargar'; });
+        }
+
+        function cargarListaItemsEditar() {
+            const div = document.getElementById('lista-items-editar');
+            if (!div) return;
+            div.innerHTML = 'Cargando...';
+
+            const soloComp = document.getElementById('solo-componentes-editar') && document.getElementById('solo-componentes-editar').checked;
+            const url = soloComp ? '/items?solo_componentes=1' : '/items';
+
+            fetchJson(url)
+                .then(data => {
+                    const filtroInput = document.getElementById('buscar-item-editar');
+                    const term = filtroInput ? filtroInput.value.trim().toLowerCase() : '';
+
+                    const filtrados = term
+                        ? data.filter(i => {
+                            const idStr = String(i.id || '');
+                            const cod = String(i.codigo_interno || '').toLowerCase();
+                            const nombre = String(i.nombre || '').toLowerCase();
+                            return (
+                                idStr.includes(term) ||
+                                cod.includes(term) ||
+                                nombre.includes(term)
+                            );
+                        })
+                        : data;
+
+                    if (filtrados.length === 0) {
+                        div.innerHTML = '<p class="mensaje">Sin resultados</p>';
+                        return;
+                    }
+
+                    div.innerHTML = filtrados.map(i => {
+                        const parts = [i.id, i.codigo_interno, i.nombre].filter(Boolean);
+                        const label = parts.join(' - ');
+                        const codigo = (i.codigo_interno || '').toString();
+                        return `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:8px;margin-bottom:6px;"><button type="button" class="sidebar-btn" style="margin:0;" onclick="abrirEditarItem(${i.id})">${escapeHtml(label)}</button><button type="button" class="sidebar-btn" style="padding:4px 8px;font-size:11px;margin:0;" onclick="abrirHistorialItem(this.getAttribute('data-codigo'))" data-codigo="${escapeHtml(codigo)}">Ver historial</button></span>`;
+                    }).join('');
+                })
+                .catch(() => { div.innerHTML = 'Error al cargar'; });
+        }
+
+        function abrirEditarItem(id) {
+            const wrap = document.getElementById('form-editar-item-wrap');
+            wrap.style.display = 'block';
+            wrap.innerHTML = '<p style="color:#9ca3af;">Cargando...</p>';
+            Promise.all([fetchJson('/items'), fetchJson('/categorias')])
+                .then(([items, categorias]) => {
+                    const item = items.find(x => x.id === id);
+                    if (!item) { wrap.innerHTML = '<p class="mensaje error">Ítem no encontrado</p>'; return; }
+                    let catOpts = categorias.map(c => `<option value="${c.id}" ${c.id == item.categoria_id ? 'selected' : ''}>${escapeHtml(c.nombre)}</option>`).join('');
+                    wrap.innerHTML = `
+                        <section class="card">
+                        <div class="card-header"><div class="card-title">Editar ítem: ${escapeHtml(item.codigo_interno||'')}</div></div>
+                        <form onsubmit="guardarEditarItem(event, ${id})">
+                            <div class="field-group">
+                                <div class="field"><label>Nombre</label><input name="nombre" value="${escapeHtml(item.nombre||'')}" required></div>
+                                <div class="field"><label>Observación</label><input name="observacion" value="${escapeHtml(item.observacion||'')}"></div>
+                                <div class="field"><label>Categoría</label><select name="categoria_id">${catOpts}</select></div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:12px;">
+                                <button type="submit">Guardar</button>
+                                <button type="button" class="btn-secondary" onclick="borrarItem(${id}, event)">Borrar ítem</button>
+                            </div>
+                            <div id="mensaje-editar-item" class="mensaje"></div>
+                        </form>
+                        </section>
+                    `;
+                })
+                .catch(err => { wrap.innerHTML = '<p class="mensaje error">' + escapeHtml(err.message) + '</p>'; });
+        }
+
+        function guardarEditarItem(e, id) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            fetch(`/items/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: fd.get('nombre'), observacion: fd.get('observacion'), categoria_id: fd.get('categoria_id') })
+            })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('mensaje-editar-item').textContent = 'Guardado';
+                    document.getElementById('mensaje-editar-item').className = 'mensaje ok';
+                    cargarListaItemsEditar();
+                    cargarInventario();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-item');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function borrarItem(id, ev) {
+            ev?.preventDefault?.();
+            if (!confirm('¿Eliminar este ítem? Se eliminarán existencias y movimientos asociados.')) return;
+            fetch(`/items/${id}`, { method: 'DELETE' })
+                .then(res => res.ok || res.status === 204 ? null : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('form-editar-item-wrap').innerHTML = '<p class="mensaje ok">Ítem eliminado</p>';
+                    document.getElementById('form-editar-item-wrap').style.display = 'block';
+                    cargarListaItemsEditar();
+                    cargarInventario();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-item');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function cargarListaCategoriasEditar() {
+            const div = document.getElementById('lista-categorias-editar');
+            if (!div) return;
+            div.innerHTML = 'Cargando...';
+            fetchJson('/categorias')
+                .then(data => {
+                    div.innerHTML = data.map(c => `
+                        <button type="button" class="sidebar-btn" style="margin-right:6px;margin-bottom:4px;" onclick="abrirEditarCategoria(${c.id})">${escapeHtml(c.abreviatura || '')} - ${escapeHtml(c.nombre || '')}</button>
+                    `).join('');
+                })
+                .catch(() => { div.innerHTML = 'Error al cargar'; });
+        }
+
+        function abrirEditarCategoria(id) {
+            const wrap = document.getElementById('form-editar-categoria-wrap');
+            wrap.style.display = 'block';
+            wrap.innerHTML = 'Cargando...';
+            fetchJson('/categorias')
+                .then(data => {
+                    const c = data.find(x => x.id === id);
+                    if (!c) { wrap.innerHTML = '<p class="mensaje error">Categoría no encontrada</p>'; return; }
+                    wrap.innerHTML = `
+                        <section class="card">
+                        <div class="card-header"><div class="card-title">Editar categoría: ${escapeHtml(c.nombre)}</div></div>
+                        <form onsubmit="guardarEditarCategoria(event, ${id})">
+                            <div class="field-group">
+                                <div class="field"><label>Nombre</label><input name="nombre" value="${escapeHtml(c.nombre||'')}" required></div>
+                                <div class="field"><label>Abreviatura</label><input name="abreviatura" value="${escapeHtml(c.abreviatura||'')}" required></div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:12px;">
+                                <button type="submit">Guardar</button>
+                                <button type="button" class="btn-secondary" onclick="borrarCategoria(${id}, event)">Borrar categoría</button>
+                            </div>
+                            <div id="mensaje-editar-categoria" class="mensaje"></div>
+                        </form>
+                        </section>
+                    `;
+                })
+                .catch(err => { wrap.innerHTML = '<p class="mensaje error">' + escapeHtml(err.message) + '</p>'; });
+        }
+
+        function guardarEditarCategoria(e, id) {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            fetch(`/categorias/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: fd.get('nombre'), abreviatura: fd.get('abreviatura') })
+            })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('mensaje-editar-categoria').textContent = 'Guardado';
+                    document.getElementById('mensaje-editar-categoria').className = 'mensaje ok';
+                    cargarListaCategoriasEditar();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-categoria');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function borrarCategoria(id, ev) {
+            ev?.preventDefault?.();
+            if (!confirm('¿Eliminar esta categoría? No se puede si hay ítems que la usan.')) return;
+            fetch(`/categorias/${id}`, { method: 'DELETE' })
+                .then(res => res.ok || res.status === 204 ? null : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('form-editar-categoria-wrap').innerHTML = '<p class="mensaje ok">Categoría eliminada</p>';
+                    cargarListaCategoriasEditar();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-categoria');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function cargarListaDepositosEditar() {
+            const div = document.getElementById('lista-depositos-editar');
+            if (!div) return;
+            div.innerHTML = 'Cargando...';
+            fetchJson('/depositos')
+                .then(data => {
+                    div.innerHTML = data.map(d => `
+                        <button type="button" class="sidebar-btn" style="margin-right:6px;margin-bottom:4px;" onclick="abrirEditarDeposito(${d.id})">${escapeHtml(d.nombre || '')} ${d.ubicacion ? '(' + escapeHtml(d.ubicacion) + ')' : ''}</button>
+                    `).join('');
+                })
+                .catch(() => { div.innerHTML = 'Error al cargar'; });
+        }
+
+        function abrirEditarDeposito(id) {
+            const wrap = document.getElementById('form-editar-deposito-wrap');
+            wrap.style.display = 'block';
+            wrap.innerHTML = 'Cargando...';
+            fetchJson('/depositos')
+                .then(data => {
+                    const d = data.find(x => x.id === id);
+                    if (!d) { wrap.innerHTML = '<p class="mensaje error">Depósito no encontrado</p>'; return; }
+                    wrap.innerHTML = `
+                        <section class="card">
+                        <div class="card-header"><div class="card-title">Editar depósito: ${escapeHtml(d.nombre)}</div></div>
+                        <form onsubmit="guardarEditarDeposito(event, ${id})">
+                            <div class="field-group">
+                                <div class="field"><label>Nombre</label><input name="nombre" value="${escapeHtml(d.nombre||'')}" required></div>
+                                <div class="field"><label>Ubicación</label><input name="ubicacion" value="${escapeHtml(d.ubicacion||'')}"></div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:12px;">
+                                <button type="submit">Guardar</button>
+                                <button type="button" class="btn-secondary" onclick="borrarDeposito(${id}, event)">Borrar depósito</button>
+                            </div>
+                            <div id="mensaje-editar-deposito" class="mensaje"></div>
+                        </form>
+                        </section>
+                    `;
+                })
+                .catch(err => { wrap.innerHTML = '<p class="mensaje error">' + escapeHtml(err.message) + '</p>'; });
+        }
+
+        function guardarEditarDeposito(e, id) {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            fetch(`/depositos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: fd.get('nombre'), ubicacion: fd.get('ubicacion') })
+            })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('mensaje-editar-deposito').textContent = 'Guardado';
+                    document.getElementById('mensaje-editar-deposito').className = 'mensaje ok';
+                    cargarListaDepositosEditar();
+                    cargarDepositos();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-deposito');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function borrarDeposito(id, ev) {
+            ev?.preventDefault?.();
+            if (!confirm('¿Eliminar este depósito? No se puede si tiene existencias o movimientos.')) return;
+            fetch(`/depositos/${id}`, { method: 'DELETE' })
+                .then(res => res.ok || res.status === 204 ? null : res.text().then(t => { throw new Error(t); }))
+                .then(() => {
+                    document.getElementById('form-editar-deposito-wrap').innerHTML = '<p class="mensaje ok">Depósito eliminado</p>';
+                    cargarListaDepositosEditar();
+                    cargarDepositos();
+                })
+                .catch(err => {
+                    const m = document.getElementById('mensaje-editar-deposito');
+                    if (m) { m.textContent = err.message; m.className = 'mensaje error'; }
+                });
+        }
+
+        function abrirEditarUsuario(id) {
+            const wrap = document.getElementById('form-editar-usuario-wrap');
+            const itemWrap = document.getElementById('form-editar-item-wrap');
+            if (itemWrap) itemWrap.style.display = 'none';
+            wrap.style.display = 'block';
+            wrap.innerHTML = '<p style="color:#9ca3af;">Cargando...</p>';
+            Promise.all([fetchJson('/usuarios'), fetchJson('/roles'), fetchJson('/depositos')])
+                .then(([users, roles, depositos]) => {
+                    const u = users.find(x => x.id === id);
+                    if (!u) { wrap.innerHTML = '<p class="mensaje error">Usuario no encontrado</p>'; return; }
+                    let rolOpts = roles.map(r => `<option value="${r.id}" ${r.nombre === u.rol_nombre ? 'selected' : ''}>${escapeHtml(r.nombre)}</option>`).join('');
+                    let depOpts = '<option value="">(Sin asignar)</option>' + depositos.map(d => `<option value="${d.id}" ${d.id == u.deposito_asignado_id ? 'selected' : ''}>${escapeHtml(d.nombre)}</option>`).join('');
+                    const extraIds = Array.isArray(u.depositos_permitidos) ? u.depositos_permitidos.filter(d => String(d) !== String(u.deposito_asignado_id || '')) : [];
+                    wrap.innerHTML = `
+                        <form onsubmit="guardarEditarUsuario(event, ${id})">
+                            <div class="field-group">
+                                <div class="field"><label>Alias</label><input name="username" value="${escapeHtml(u.username||'')}" required></div>
+                                <div class="field"><label>Contraseña (dejar vacío para no cambiar)</label><input type="password" name="password" placeholder="Alfanumérica (letras y números), mín. 4" minlength="4" pattern="[a-zA-Z0-9]+" title="Solo letras y números"></div>
+                                <div class="field"><label>Nombre</label><input name="nombre" value="${escapeHtml(u.nombre||'')}"></div>
+                                <div class="field"><label>Apellido</label><input name="apellido" value="${escapeHtml(u.apellido||'')}"></div>
+                                <div class="field"><label>Departamento</label><input name="departamento" value="${escapeHtml(u.departamento||'')}"></div>
+                                <div class="field"><label>Ciudad</label><input name="ciudad" value="${escapeHtml(u.ciudad||'')}"></div>
+                                <div class="field"><label>Teléfono</label><input name="telefono" value="${escapeHtml(u.telefono||'')}"></div>
+                                <div class="field"><label>Rol</label><select name="rol_id">${rolOpts}</select></div>
+                                <div class="field"><label>Depósito asignado</label><select name="deposito_asignado_id">${depOpts}</select></div>
+                                <div class="field">
+                                    <label>Depósitos adicionales permitidos</label>
+                                    <div class="search-row">
+                                        <select id="editar-usuario-deposito-extra">
+                                            <option value="">Agregar depósito permitido...</option>
+                                            <option value="__TODOS__">Todos los depósitos (ver y mover en todos)</option>
+                                            ${depositos.map(d => `<option value="${d.id}">${escapeHtml(d.nombre)}</option>`).join('')}
+                                        </select>
+                                        <button type="button" onclick="agregarDepositoExtraEditar()">Agregar</button>
+                                    </div>
+                                    <div id="editar-usuario-depositos-extra-list" data-ids="${extraIds.map(String).join(',')}" data-all-ids="${depositos.map(d => d.id).join(',')}"></div>
+                                </div>
+                            </div>
+                            <button type="submit">Guardar</button>
+                        </form>
+                    `;
+
+                    // Render chips iniciales para depósitos extra
+                    const listDiv = document.getElementById('editar-usuario-depositos-extra-list');
+                    if (listDiv) {
+                        const ids = (listDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+                        const allIds = (listDiv.getAttribute('data-all-ids') || '').split(',').filter(Boolean);
+                        const tieneTodos = allIds.length > 0 && ids.length === allIds.length && allIds.every(function(id) { return ids.indexOf(id) !== -1; });
+                        listDiv.innerHTML = '';
+                        if (tieneTodos) {
+                            listDiv.setAttribute('data-ids', allIds.join(','));
+                            const chip = document.createElement('button');
+                            chip.type = 'button';
+                            chip.className = 'sidebar-btn';
+                            chip.style.marginRight = '4px';
+                            chip.style.marginBottom = '4px';
+                            chip.setAttribute('data-id', '__TODOS__');
+                            chip.textContent = 'Todos los depósitos';
+                            chip.onclick = function () {
+                                listDiv.setAttribute('data-ids', '');
+                                this.remove();
+                            };
+                            listDiv.appendChild(chip);
+                        } else {
+                            ids.forEach(idStr => {
+                                const dep = depositos.find(d => String(d.id) === idStr);
+                                if (!dep) return;
+                                const chip = document.createElement('button');
+                                chip.type = 'button';
+                                chip.className = 'sidebar-btn';
+                                chip.style.marginRight = '4px';
+                                chip.style.marginBottom = '4px';
+                                chip.setAttribute('data-id', idStr);
+                                chip.textContent = dep.nombre;
+                                chip.onclick = function () {
+                                    const current = (listDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+                                    const next = current.filter(x => x !== idStr);
+                                    listDiv.setAttribute('data-ids', next.join(','));
+                                    this.remove();
+                                };
+                                listDiv.appendChild(chip);
+                            });
+                        }
+                    }
+                })
+                .catch(err => { wrap.innerHTML = '<p class="mensaje error">' + escapeHtml(err.message) + '</p>'; });
+        }
+
+        function verFichaUsuario(id, ev) {
+            ev?.preventDefault?.();
+            Promise.all([fetchJson('/usuarios'), fetchJson('/depositos')])
+                .then(([users, depositos]) => {
+                    const u = users.find(x => x.id === id);
+                    if (!u) return;
+                    const ids = [];
+                    if (u.deposito_asignado_id) ids.push(u.deposito_asignado_id);
+                    const permitidos = Array.isArray(u.depositos_permitidos) ? u.depositos_permitidos : [];
+                    permitidos.forEach(pid => {
+                        if (pid && !ids.includes(pid)) ids.push(pid);
+                    });
+                    const depositoNombres = ids.map(did => {
+                        const d = depositos.find(x => x.id == did);
+                        return d ? d.nombre : 'ID ' + did;
+                    });
+                    const depositoLabel = depositoNombres.length > 0 ? depositoNombres.join(', ') : '(Sin asignar)';
+                    const info = [
+                        'Alias: ' + (u.username||''),
+                        'Nombre: ' + (u.nombre||'') + ' ' + (u.apellido||''),
+                        'Departamento: ' + (u.departamento||''),
+                        'Ciudad: ' + (u.ciudad||''),
+                        'Teléfono: ' + (u.telefono||''),
+                        'Rol: ' + (u.rol_nombre||''),
+                        'Depósitos asignados: ' + depositoLabel
+                    ].join('<br>');
+                    const modal = document.getElementById('modal-stock-deposito');
+                    document.getElementById('modal-stock-body').innerHTML = '<div style="padding:12px;">' + info + '</div>';
+                    document.querySelector('.modal-stock-header h3').textContent = 'Ficha de usuario';
+                    modal.classList.add('visible');
+                });
+        }
+
+        function guardarEditarUsuario(e, id) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            const payload = { username: fd.get('username'), rol_id: fd.get('rol_id'), deposito_asignado_id: fd.get('deposito_asignado_id') || null };
+            if (fd.get('password')) payload.password = fd.get('password');
+            ['nombre','apellido','departamento','ciudad','telefono'].forEach(k => { if (fd.get(k) !== undefined) payload[k] = fd.get(k); });
+
+            const extraDiv = document.getElementById('editar-usuario-depositos-extra-list');
+            if (extraDiv) {
+                const ids = (extraDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+                if (ids.length > 0) payload.depositos_permitidos = ids;
+            }
+
+            fetch(`/usuarios/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+                .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+                .then(() => { document.getElementById('form-editar-usuario-wrap').innerHTML = '<p class="mensaje ok">Guardado</p>'; cargarListaUsuariosEditar(); })
+                .catch(err => { document.getElementById('form-editar-usuario-wrap').innerHTML += `<p class="mensaje error">${escapeHtml(err.message)}</p>`; });
+        }
+
+        function cargarInventario() {
+            const filtroDeposito = document.getElementById('inventario-filtro-deposito');
+            const depositoId = filtroDeposito ? filtroDeposito.value : '';
+            const tbody = document.querySelector('#tabla-inventario tbody');
+            const msgVacio = document.getElementById('mensaje-inventario-vacio');
+
+            if (!depositoId) {
+                if (tbody) tbody.innerHTML = '';
+                if (msgVacio) msgVacio.textContent = 'Seleccione un depósito y pulse Filtrar para cargar el stock.';
+                return;
+            }
+            if (msgVacio) msgVacio.textContent = '';
+
+            const url = `/inventario?deposito_id=${encodeURIComponent(depositoId)}`;
+
+            fetchJson(url)
+                .then(data => {
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    const groupBy = {};
+                    data.forEach(item => {
+                        const key = (item.item_nombre || '') + '\0' + (item.deposito_nombre || '');
+                        if (!groupBy[key]) {
+                            groupBy[key] = { item_nombre: item.item_nombre || '', deposito_nombre: item.deposito_nombre || '', cantidad: 0, codigos: [], componentes: item.componentes || '', item_id: item.item_id, deposito_id: item.deposito_id };
+                        }
+                        groupBy[key].cantidad += Number(item.cantidad) || 0;
+                        const cod = item.codigo_interno || '';
+                        if (cod) groupBy[key].codigos.push(cod);
+                        if ((item.componentes || '').trim() && !groupBy[key].componentes) groupBy[key].componentes = item.componentes;
+                    });
+
+                    if (msgVacio) msgVacio.textContent = Object.keys(groupBy).length === 0 ? 'No hay ítems en este depósito.' : '';
+                    Object.keys(groupBy).forEach(key => {
+                        const g = groupBy[key];
+                        const codigos = g.codigos || [];
+                        const codigoCol = codigos.length > 1 ? 'Grupo' : (codigos[0] || '-');
+                        const codigosStr = codigos.join(',');
+                        const componentes = (g.componentes || '').trim();
+                        const componentesAttr = escapeHtml(componentes).replace(/"/g, '&quot;');
+                        const itemId = g.item_id || '';
+                        const depositoId = g.deposito_id || '';
+                        const tr = document.createElement('tr');
+                        const firstCodigo = codigos[0] || '';
+                        const btnComponentes = '<button type="button" class="sidebar-btn" style="padding:4px 10px;font-size:12px;" data-item-id="' + itemId + '" data-deposito-id="' + depositoId + '" data-nombre="' + escapeHtml(g.item_nombre).replace(/"/g, '&quot;') + '" data-componentes="' + componentesAttr + '" onclick="abrirModalComponentes(this.getAttribute(\'data-item-id\'), this.getAttribute(\'data-deposito-id\'), this.getAttribute(\'data-nombre\'), this.getAttribute(\'data-componentes\'))">Componentes</button>';
+                        tr.innerHTML = `
+                            <td>${escapeHtml(codigoCol)}</td>
+                            <td>${escapeHtml(g.item_nombre)}</td>
+                            <td>${escapeHtml(g.deposito_nombre)}</td>
+                            <td>${g.cantidad}</td>
+                            <td><button type="button" class="sidebar-btn" style="padding:4px 10px;font-size:12px;" data-codigos="${escapeHtml(codigosStr)}" data-nombre="${escapeHtml(g.item_nombre)}" data-deposito="${escapeHtml(g.deposito_nombre)}" onclick="verCodigosInventario(this.getAttribute('data-codigos'), this.getAttribute('data-nombre'), this.getAttribute('data-deposito'))">Códigos (${codigos.length})</button></td>
+                            <td>${btnComponentes}</td>
+                            <td>${firstCodigo ? '<button type="button" class="sidebar-btn" style="padding:4px 10px;font-size:12px;" data-codigo="' + escapeHtml(firstCodigo) + '" onclick="abrirHistorialItem(this.getAttribute(\'data-codigo\'))">Ver historial</button>' : '-'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function verCodigosInventario(codigosAttr, nombreAttr, depositoAttr) {
+            const codigos = (codigosAttr || '').split(',').filter(Boolean);
+            if (codigos.length === 0) return;
+            const nombre = (nombreAttr || '').trim() || 'Ítem';
+            const deposito = (depositoAttr || '').trim() || '';
+            const modal = document.getElementById('modal-historial-item');
+            const titulo = document.getElementById('modal-historial-titulo');
+            const body = document.getElementById('modal-historial-body');
+            titulo.textContent = 'Códigos (' + codigos.length + ')';
+            const codigosId = 'modal-codigos-list-' + Date.now();
+            var codigosStrAttr = escapeHtml(codigos.join(','));
+            body.innerHTML = '<div id="' + codigosId + '" class="modal-codigos-print">' +
+                (deposito ? '<p style="margin:0 0 12px;color:#9ca3af;font-size:13px;">' + escapeHtml(nombre) + ' — ' + escapeHtml(deposito) + '</p>' : '') +
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">' +
+                codigos.map(c => '<span style="display:inline-flex;align-items:center;gap:6px;"><code style="background:rgba(220,38,38,0.2);padding:6px 10px;border-radius:6px;">' + escapeHtml(c) + '</code><button type="button" class="sidebar-btn" style="padding:2px 6px;font-size:11px;" data-codigo="' + escapeHtml(c) + '" onclick="cerrarModalHistorialItem(); abrirHistorialItem(this.getAttribute(\'data-codigo\'))">Historial</button><button type="button" class="sidebar-btn" style="padding:2px 6px;font-size:11px;" data-codigo="' + escapeHtml(c) + '" onclick="imprimirQR(this.getAttribute(\'data-codigo\'))">QR</button></span>').join('') +
+                '</div>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '<button type="button" class="sidebar-btn" onclick="imprimirCodigosModal(\'' + codigosId.replace(/'/g, "\\'") + '\')">Imprimir códigos</button>' +
+                '<button type="button" class="sidebar-btn" data-codigos-list="' + codigosStrAttr + '" onclick="var a=this.getAttribute(\'data-codigos-list\'); if(a) imprimirTodasEtiquetasQR(a.split(\',\').filter(Boolean));">Imprimir etiquetas QR</button>' +
+                '</div></div>';
+            modal.classList.add('visible');
+        }
+
+        function imprimirCodigosModal(contenidoId) {
+            const el = document.getElementById(contenidoId);
+            if (!el) return;
+            const titulo = (el.querySelector('p') && el.querySelector('p').textContent) || 'Códigos';
+            const codigos = [];
+            el.querySelectorAll('code').forEach(c => { if (c.textContent) codigos.push(c.textContent); });
+            const html = '<!DOCTYPE html><html><head><title>Códigos</title><style>body{font-family:sans-serif;padding:24px;background:#fff;color:#111;} h2{font-size:16px;margin:0 0 16px;color:#333;} .codigo{display:block;margin:6px 0;font-size:14px;} code{background:#f0f0f0;padding:6px 10px;border-radius:4px;}</style></head><body><h2>' + escapeHtml(titulo) + '</h2>' + codigos.map(c => '<div class="codigo"><code>' + escapeHtml(c) + '</code></div>').join('') + '</body></html>';
+            const ventana = window.open('', '_blank', 'width=600,height=500');
+            ventana.document.write(html);
+            ventana.document.close();
+            ventana.focus();
+            setTimeout(function() { ventana.print(); ventana.close(); }, 400);
+        }
+
+        // activar filtros de búsqueda de edición (si existen en el DOM)
+        const inputBuscUsuario = document.getElementById('buscar-usuario-editar');
+        if (inputBuscUsuario) {
+            inputBuscUsuario.addEventListener('input', () => cargarListaUsuariosEditar());
+        }
+
+        const inputBuscItem = document.getElementById('buscar-item-editar');
+        if (inputBuscItem) {
+            inputBuscItem.addEventListener('input', () => cargarListaItemsEditar());
+        }
+        const soloComponentesCheck = document.getElementById('solo-componentes-editar');
+        if (soloComponentesCheck) {
+            soloComponentesCheck.addEventListener('change', () => cargarListaItemsEditar());
+        }
+        const inputBuscarListaItems = document.getElementById('buscar-lista-items');
+        if (inputBuscarListaItems) {
+            inputBuscarListaItems.addEventListener('input', function() {
+                if (listaItemsVerCache.length || categoriasListaItemsCache.length) renderListaItemsVer(listaItemsVerCache, categoriasListaItemsCache);
+            });
+        }
+
+        function imprimirTodasEtiquetasQR(codigosArray) {
+            if (!codigosArray || codigosArray.length === 0) return;
+            if (typeof QRCode === 'undefined') { alert('Librería QR no cargada'); return; }
+            var baseUrl = (window.location.origin || '') + (window.location.pathname || '/');
+            var promesas = codigosArray.map(function(codigo) {
+                var urlHistorial = baseUrl + '?codigo=' + encodeURIComponent(codigo);
+                return Promise.all([
+                    new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 140, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); }),
+                    new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 70, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); }),
+                    new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 50, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); })
+                ]).then(function(urls) { return { codigo: codigo, qrGrande: urls[0], qrMedio: urls[1], qrChico: urls[2] }; });
+            });
+            Promise.all(promesas).then(function(resultados) {
+                var etiquetasHtml = '';
+                resultados.forEach(function(r) {
+                    var codigo = r.codigo || '';
+                    var attrEsc = codigo.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    var textEsc = codigo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                    etiquetasHtml += '<div class="etiqueta"><div class="codigo-top">' + textEsc + '</div><img class="qr-grande" src="' + r.qrGrande + '" width="140" height="140"><div class="qr-dobles"><img src="' + r.qrMedio + '" width="70" height="70"><img src="' + r.qrChico + '" width="50" height="50"></div><div class="barcode-wrap"><svg class="bc" data-c="' + attrEsc + '"></svg></div><div class="codigo-bottom">' + textEsc + '</div></div>';
+                });
+                var fullHtml = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Etiquetas</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script><style>@page{size:80mm auto;margin:2mm;}*{margin:0;padding:0;box-sizing:border-box;}body{font-family:sans-serif;background:#fff;color:#111;padding:3mm;max-width:80mm;margin:0 auto;} .etiqueta{padding:4mm 0;border-bottom:1px dashed #ccc;text-align:center;} .etiqueta:last-child{border-bottom:none;} .codigo-top{font-size:11px;font-weight:bold;margin-bottom:2mm;} .qr-grande{display:block;margin:0 auto 2mm;} .qr-dobles{display:flex;justify-content:center;gap:4mm;margin:2mm 0;} .barcode-wrap{margin:2mm 0;} .codigo-bottom{font-size:9px;} .no-print{margin-top:8px;}</style></head><body>' + etiquetasHtml + '<button class="no-print" onclick="window.print()" style="padding:8px 16px;font-size:12px;cursor:pointer;background:#dc2626;color:#fff;border:none;border-radius:6px;display:block;margin:12px auto;">Imprimir todas las etiquetas</button><script>function _drawAllBarcodes(){var s=document.querySelectorAll(\"svg[data-c]\");if(typeof JsBarcode===\"undefined\"){setTimeout(_drawAllBarcodes,50);return;}s.forEach(function(svg){var c=svg.getAttribute(\"data-c\");if(c)try{JsBarcode(svg,c,{format:\"CODE128\",width:1.2,height:24,displayValue:false});}catch(e){}});}_drawAllBarcodes();<\/script></body></html>';
+                var win = window.open('', '_blank', 'width=320,height=600');
+                if (!win) { alert('No se pudo abrir la ventana. Permite ventanas emergentes para este sitio.'); return; }
+                win.document.write(fullHtml);
+                win.document.close();
+                win.focus();
+            }).catch(function(e) { alert('Error al generar etiquetas: ' + e.message); });
+        }
+
+        function imprimirQR(codigo) {
+            if (typeof QRCode === 'undefined') {
+                alert('Librería QR no cargada');
+                return;
+            }
+            var urlHistorial = (window.location.origin || '') + (window.location.pathname || '/') + '?codigo=' + encodeURIComponent(codigo);
+            var codigoEsc = (codigo || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/</g, '\\x3c');
+            Promise.all([
+                new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 140, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); }),
+                new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 70, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); }),
+                new Promise(function(r, rej) { QRCode.toDataURL(urlHistorial, { width: 50, margin: 0 }, function(err, url) { err ? rej(err) : r(url); }); })
+            ]).then(function(urls) {
+                var qrGrande = urls[0], qrMedio = urls[1], qrChico = urls[2];
+                var win = window.open('', '_blank', 'width=320,height=480');
+                win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title></title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>' +
+                    '<style>@page{size:80mm auto;margin:2mm;}*{margin:0;padding:0;box-sizing:border-box;}body{font-family:sans-serif;background:#fff;color:#111;padding:3mm;text-align:center;max-width:80mm;margin:0 auto;}' +
+                    '.codigo-top{font-size:11px;font-weight:bold;margin-bottom:2mm;letter-spacing:0.5px;}.qr-grande{display:block;margin:0 auto 2mm;}.codigo-mid{font-size:9px;margin-bottom:2mm;}.qr-dobles{display:flex;justify-content:center;gap:4mm;align-items:center;margin-bottom:2mm;}.qr-dobles img{display:block;}.barcode-wrap{margin:2mm 0;}.codigo-bottom{font-size:9px;margin-top:1mm;}' +
+                    '.no-print{display:block;margin-top:4mm;}' +
+                    '@media print{body{padding:0;} .no-print{display:none!important;}}</style></head><body>' +
+                    '<div class="codigo-top">' + escapeHtml(codigo) + '</div>' +
+                    '<img class="qr-grande" src="' + qrGrande + '" width="140" height="140" alt="QR">' +
+                    '<div class="codigo-mid">' + escapeHtml(codigo) + '</div>' +
+                    '<div class="qr-dobles"><img src="' + qrMedio + '" width="70" height="70" alt="QR"><img src="' + qrChico + '" width="50" height="50" alt="QR"></div>' +
+                    '<div class="barcode-wrap"><svg id="barcode"></svg></div>' +
+                    '<div class="codigo-bottom">' + escapeHtml(codigo) + '</div>' +
+                    '<button class="no-print" onclick="document.title=\'\';window.print();" style="padding:6px 14px;font-size:12px;cursor:pointer;background:#dc2626;color:#fff;border:none;border-radius:6px;">Imprimir en ticket (3NSTAR LTT324)</button>' +
+                    '<script>var _c="' + codigoEsc + '";function _drawBar(){if(typeof JsBarcode!=="undefined"){try{JsBarcode("#barcode",_c,{format:"CODE128",width:1.2,height:24,displayValue:false});}catch(e){}}else{setTimeout(_drawBar,30);}}_drawBar();<\/script></body></html>');
+                win.document.close();
+            }).catch(function(e) { alert('Error al generar QR: ' + e.message); });
+        }
+
+        function agregarDepositoExtraEditar() {
+            const sel = document.getElementById('editar-usuario-deposito-extra');
+            const listDiv = document.getElementById('editar-usuario-depositos-extra-list');
+            if (!sel || !listDiv) return;
+            const val = sel.value;
+            const text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+            if (!val) return;
+
+            const allIds = (listDiv.getAttribute('data-all-ids') || '').split(',').filter(Boolean);
+            const maxDepositos = allIds.length;
+            const current = (listDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+
+            if (val === '__TODOS__') {
+                listDiv.setAttribute('data-ids', allIds.join(','));
+                listDiv.innerHTML = '';
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'sidebar-btn';
+                chip.style.marginRight = '4px';
+                chip.style.marginBottom = '4px';
+                chip.setAttribute('data-id', '__TODOS__');
+                chip.textContent = 'Todos los depósitos';
+                chip.onclick = function () {
+                    listDiv.setAttribute('data-ids', '');
+                    this.remove();
+                };
+                listDiv.appendChild(chip);
+                sel.value = '';
+                return;
+            }
+
+            const todosChip = listDiv.querySelector('[data-id="__TODOS__"]');
+            if (todosChip) {
+                todosChip.remove();
+                listDiv.setAttribute('data-ids', '');
+            }
+            const now = (listDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+            if (now.length >= maxDepositos) {
+                alert('El máximo de depósitos permitidos es la cantidad de depósitos existentes (' + maxDepositos + '). O elija "Todos los depósitos".');
+                return;
+            }
+            if (now.includes(val)) return;
+            now.push(val);
+            listDiv.setAttribute('data-ids', now.join(','));
+
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'sidebar-btn';
+            chip.style.marginRight = '4px';
+            chip.style.marginBottom = '4px';
+            chip.setAttribute('data-id', val);
+            chip.textContent = text;
+            chip.onclick = function () {
+                const list = (listDiv.getAttribute('data-ids') || '').split(',').filter(Boolean);
+                const next = list.filter(x => x !== val);
+                listDiv.setAttribute('data-ids', next.join(','));
+                this.remove();
+            };
+            listDiv.appendChild(chip);
+            sel.value = '';
+        }
+
+        function abrirModalStockPorDeposito() {
+            const overlay = document.getElementById('modal-stock-deposito');
+            const body = document.getElementById('modal-stock-body');
+            overlay.classList.add('visible');
+            body.innerHTML = '<p style="color:#9ca3af;">Cargando...</p>';
+
+            fetchJson('/inventario')
+                .then(data => {
+                    const porDeposito = {};
+                    data.forEach(item => {
+                        const dep = item.deposito_nombre || '(Sin depósito)';
+                        if (!porDeposito[dep]) porDeposito[dep] = [];
+                        porDeposito[dep].push({
+                            codigo: item.codigo_interno || item.item_id,
+                            producto: item.item_nombre,
+                            cantidad: item.cantidad,
+                        });
+                    });
+
+                    if (Object.keys(porDeposito).length === 0) {
+                        body.innerHTML = '<p style="color:#9ca3af;">No hay datos de inventario.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    for (const [dep, items] of Object.entries(porDeposito)) {
+                        html += `
+                            <div class="stock-deposito-group">
+                                <div class="stock-deposito-title">${escapeHtml(dep)}</div>
+                                <table class="stock-deposito-table">
+                                    <thead><tr><th>Código</th><th>Producto</th><th>Cantidad</th></tr></thead>
+                                    <tbody>
+                                        ${items.map(i => `
+                                            <tr>
+                                                <td>${escapeHtml(String(i.codigo))}</td>
+                                                <td>${escapeHtml(i.producto)}</td>
+                                                <td>${i.cantidad}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                    body.innerHTML = html;
+                })
+                .catch(err => {
+                    body.innerHTML = `<p class="mensaje error">Error al cargar: ${escapeHtml(err.message || 'Error desconocido')}</p>`;
+                });
+        }
+
+        function cerrarModalStockPorDeposito() {
+            document.getElementById('modal-stock-deposito').classList.remove('visible');
+            const h3 = document.querySelector('#modal-stock-deposito .modal-stock-header h3');
+            if (h3) h3.textContent = 'Stock por Depósito';
+        }
+
+        function abrirHistorialItem(codigo) {
+            if (!codigo) return;
+            const modal = document.getElementById('modal-historial-item');
+            const titulo = document.getElementById('modal-historial-titulo');
+            const body = document.getElementById('modal-historial-body');
+            titulo.textContent = 'Historial de movimientos: ' + escapeHtml(codigo);
+            body.innerHTML = '<p style="color:#9ca3af;">Cargando...</p>';
+            modal.classList.add('visible');
+            fetchJson(`/movimientos-por-item?codigo=${encodeURIComponent(codigo)}`)
+                .then(data => {
+                    if (data.length === 0) {
+                        body.innerHTML = '<p class="mensaje">Sin movimientos para este ítem.</p>';
+                        return;
+                    }
+                    let html = '<table class="stock-deposito-table"><thead><tr><th>Movimiento</th><th>Fecha y hora</th><th>Cantidad</th><th>Observación</th></tr></thead><tbody>';
+                    data.forEach(m => {
+                        const mov = escapeHtml((m.deposito_origen_nombre || '') + ' → ' + (m.deposito_destino_nombre || ''));
+                        html += `<tr><td>${mov}</td><td>${formatoFechaHora(m.created_at)}</td><td>${m.cantidad}</td><td>${escapeHtml(m.observacion||'')}</td></tr>`;
+                    });
+                    body.innerHTML = html + '</tbody></table>';
+                })
+                .catch(err => {
+                    body.innerHTML = '<p class="mensaje error">' + escapeHtml(err.message || 'Error') + '</p>';
+                });
+        }
+
+        function cerrarModalHistorialItem() {
+            document.getElementById('modal-historial-item').classList.remove('visible');
+        }
+
+        function abrirModalComponentes(itemId, depositoId, nombreAttr, componentesAttr) {
+            var nombre = (nombreAttr || '').trim() || 'Ítem';
+            var texto = (componentesAttr || '').trim();
+            window._ultimoModalComponentes = { itemId: itemId, depositoId: depositoId, nombre: nombre, componentesAttr: componentesAttr || '' };
+            var modal = document.getElementById('modal-historial-item');
+            var titulo = document.getElementById('modal-historial-titulo');
+            var body = document.getElementById('modal-historial-body');
+            titulo.textContent = 'Componentes: ' + nombre;
+            body.innerHTML = '<div id="modal-componentes-content"><p style="color:#9ca3af;">Cargando...</p></div>';
+            modal.classList.add('visible');
+
+            var renderBody = function(listaComponentes, categorias) {
+                var html = '';
+                if (texto) html += '<div class="field-group"><label>Descripción del ítem</label><div style="white-space:pre-wrap;padding:12px;background:#1f2937;border-radius:8px;color:#e5e7eb;margin-bottom:12px;">' + escapeHtml(texto) + '</div></div>';
+                else html += '<p class="mensaje" style="margin-bottom:12px;">Sin descripción de componentes.</p>';
+
+                html += '<div class="field-group"><label>Ítems componente (vinculados a este ítem, en el mismo depósito)</label>';
+                if (listaComponentes && listaComponentes.length > 0) {
+                    html += '<ul style="margin:8px 0;padding-left:20px;">';
+                    listaComponentes.forEach(function(c) {
+                        html += '<li>' + escapeHtml(c.codigo_interno || '') + ' — ' + escapeHtml(c.nombre || '') + '</li>';
+                    });
+                    html += '</ul>';
+                } else html += '<p style="color:#9ca3af;margin:8px 0;">Aún no hay ítems componente. Cree uno abajo para que se agregue al stock del mismo depósito vinculado a este ítem.</p>';
+
+                html += '</div><div class="field-group" style="margin-top:16px;padding-top:16px;border-top:1px solid #374151;"><label>Añadir ítem componente</label><p style="color:#9ca3af;font-size:12px;margin-bottom:8px;">El ítem se creará con categoría "Componentes" en el mismo depósito y quedará vinculado a este ítem.</p>';
+                var catComponentes = (categorias || []).find(function(c) { return (c.nombre || '').toLowerCase() === 'componentes' || (c.abreviatura || '').toLowerCase() === 'comp'; });
+                var catCompId = catComponentes ? catComponentes.id : '';
+                html += '<div class="search-row" style="flex-wrap:wrap;"><div class="field"><input type="text" id="comp-nombre" placeholder="Nombre (ej: Placa madre)" style="padding:8px;border-radius:6px;border:1px solid #374151;background:#111;color:#e5e7eb;min-width:180px;"></div><div class="field"><button type="button" class="sidebar-btn" data-cat-comp-id="' + catCompId + '" onclick="crearItemComponente(\'' + (itemId || '').toString().replace(/'/g, "\\'") + '\', \'' + (depositoId || '').toString().replace(/'/g, "\\'") + '\', this.getAttribute(\'data-cat-comp-id\'))">Crear ítem componente</button></div></div><div id="modal-componentes-msg" class="mensaje" style="margin-top:8px;"></div></div>';
+                document.getElementById('modal-componentes-content').innerHTML = html;
+            };
+
+            Promise.all([
+                fetchJson('/items?item_padre_id=' + encodeURIComponent(itemId || '')),
+                fetchJson('/categorias')
+            ]).then(function(res) {
+                var lista = res[0] || [];
+                var cats = res[1] || [];
+                renderBody(lista, cats);
+            }).catch(function() {
+                document.getElementById('modal-componentes-content').innerHTML = '<p class="mensaje error">Error al cargar.</p>';
+            });
+        }
+
+        function crearItemComponente(itemPadreId, depositoId, categoriaComponentesId) {
+            var nombre = document.getElementById('comp-nombre') && document.getElementById('comp-nombre').value.trim();
+            var catCompId = categoriaComponentesId || '';
+            var msgEl = document.getElementById('modal-componentes-msg');
+            if (!msgEl) return;
+            if (!nombre) {
+                msgEl.textContent = 'Indique nombre del componente.';
+                msgEl.className = 'mensaje error';
+                return;
+            }
+            if (!catCompId) {
+                msgEl.textContent = 'No existe la categoría "COMPONENTES". Cree la categoría en Catálogo (nombre: COMPONENTES, abreviatura: COMP).';
+                msgEl.className = 'mensaje error';
+                return;
+            }
+            if (!itemPadreId || !depositoId) {
+                msgEl.textContent = 'Faltan datos del ítem padre o depósito.';
+                msgEl.className = 'mensaje error';
+                return;
+            }
+            msgEl.textContent = 'Creando...';
+            msgEl.className = 'mensaje';
+            fetch('/items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    categoria_id: catCompId,
+                    deposito_id: depositoId,
+                    cantidad_inicial: 1,
+                    item_padre_id: itemPadreId
+                })
+            }).then(function(r) {
+                if (!r.ok) return r.text().then(function(t) { throw new Error(t); });
+                return r.json();
+            }).then(function(data) {
+                msgEl.textContent = 'Ítem componente creado: ' + (data.codigos && data.codigos[0] ? data.codigos[0] : '');
+                msgEl.className = 'mensaje ok';
+                if (document.getElementById('comp-nombre')) document.getElementById('comp-nombre').value = '';
+                var ctx = window._ultimoModalComponentes;
+                if (ctx) abrirModalComponentes(ctx.itemId, ctx.depositoId, ctx.nombre, ctx.componentesAttr);
+                cargarInventario();
+            }).catch(function(e) {
+                msgEl.textContent = e.message || 'Error al crear';
+                msgEl.className = 'mensaje error';
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        var cacheNombresItems = [];
+        function cargarNombresItemsParaAutocompletar() {
+            fetchJson('/items').then(data => {
+                cacheNombresItems = [...new Set((data || []).map(i => i.nombre).filter(Boolean))];
+            }).catch(() => { cacheNombresItems = []; });
+        }
+        function actualizarDatalistNombres(valor) {
+            var dl = document.getElementById('datalist-nombres-items');
+            if (!dl) return;
+            var v = (valor || '').trim().toLowerCase();
+            var list = v.length < 1 ? [] : (v.length < 2 ? cacheNombresItems.slice(0, 40) : cacheNombresItems.filter(function(n) { return n.toLowerCase().indexOf(v) !== -1; }).slice(0, 40));
+            dl.innerHTML = list.map(function(n) { return '<option value="' + escapeHtml(n) + '">'; }).join('');
+        }
+
+        function exportarExcel() {
+            const filtroDeposito = document.getElementById('inventario-filtro-deposito');
+            const depositoId = filtroDeposito ? filtroDeposito.value : '';
+
+            const url = depositoId
+                ? `/exportar-excel?deposito_id=${encodeURIComponent(depositoId)}`
+                : '/exportar-excel';
+
+            window.open(url, '_blank');
+        }
+
+        let usuarioDepositosExtra = [];
+
+        function syncComboboxOptions(selectEl) {
+            if (!selectEl || !selectEl._comboboxDropdown) return;
+            var dd = selectEl._comboboxDropdown;
+            dd.innerHTML = '';
+            for (var i = 0; i < selectEl.options.length; i++) {
+                var opt = selectEl.options[i];
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'combobox-option';
+                btn.setAttribute('data-value', opt.value);
+                btn.textContent = opt.textContent || opt.text;
+                btn.onclick = function() {
+                    var val = this.getAttribute('data-value');
+                    var text = this.textContent;
+                    selectEl.value = val;
+                    if (selectEl._comboboxInput) { selectEl._comboboxInput.value = text; }
+                    dd.classList.remove('open');
+                };
+                dd.appendChild(btn);
+            }
+        }
+        function filterComboboxDropdown(selectEl, query) {
+            if (!selectEl || !selectEl._comboboxDropdown) return;
+            var q = (query || '').trim().toLowerCase();
+            var opts = selectEl._comboboxDropdown.querySelectorAll('.combobox-option');
+            var hasVisible = false;
+            opts.forEach(function(o) {
+                var text = (o.textContent || '').toLowerCase();
+                var show = q === '' || text.indexOf(q) !== -1;
+                o.style.display = show ? '' : 'none';
+                if (show) hasVisible = true;
+            });
+            selectEl._comboboxDropdown.classList.toggle('open', hasVisible);
+        }
+        function initCombobox(selectEl) {
+            if (!selectEl || selectEl._comboboxInit) return;
+            var wrap = document.createElement('div');
+            wrap.className = 'combobox-wrap';
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'combobox-input';
+            input.autocomplete = 'off';
+            input.placeholder = selectEl.options[0] ? selectEl.options[0].textContent : 'Escriba para buscar...';
+            var dropdown = document.createElement('div');
+            dropdown.className = 'combobox-dropdown';
+            selectEl.classList.add('combobox-select-hidden');
+            selectEl.parentNode.insertBefore(wrap, selectEl);
+            wrap.appendChild(selectEl);
+            wrap.appendChild(input);
+            wrap.appendChild(dropdown);
+            syncComboboxOptions(selectEl);
+            input.addEventListener('focus', function() {
+                filterComboboxDropdown(selectEl, input.value);
+            });
+            input.addEventListener('input', function() {
+                filterComboboxDropdown(selectEl, input.value);
+            });
+            input.addEventListener('blur', function() {
+                setTimeout(function() { dropdown.classList.remove('open'); }, 200);
+            });
+            selectEl._comboboxInit = true;
+            selectEl._comboboxInput = input;
+            selectEl._comboboxDropdown = dropdown;
+            var opt = selectEl.options[selectEl.selectedIndex];
+            input.value = (opt && opt.value !== '') ? opt.textContent : '';
+        }
+
+        function cargarDepositos() {
+            fetchJson('/depositos')
+                .then(data => {
+                    const perm = window.usuarioPermisos || {};
+                    const origenSoloPermitidos = !perm.esMaster && Array.isArray(perm.depositosPermitidos);
+                    const datosOrigen = origenSoloPermitidos ? data.filter(d => perm.depositosPermitidos.some(id => id == d.id)) : data;
+
+                    const selectConfigs = [
+                        { el: document.getElementById('deposito-producto'), placeholder: 'Selecciona depósito de origen...', datos: datosOrigen },
+                        { el: document.getElementById('transfer-origen'), placeholder: 'Selecciona depósito origen...', datos: datosOrigen },
+                        { el: document.getElementById('transfer-destino'), placeholder: 'Selecciona depósito destino...', datos: data },
+                        { el: document.getElementById('usuario-deposito'), placeholder: '(Sin asignar)', allowEmpty: true, datos: data },
+                        { el: document.getElementById('inventario-filtro-deposito'), placeholder: 'Todos los depósitos', allowEmpty: true, datos: datosOrigen },
+                        { el: document.getElementById('usuario-deposito-extra'), placeholder: 'Agregar depósito permitido...', allowEmpty: true, datos: data },
+                        { el: document.getElementById('cargar-inventario-deposito'), placeholder: 'Selecciona depósito...', datos: datosOrigen },
+                    ];
+
+                    selectConfigs.forEach(cfg => {
+                        if (!cfg.el) return;
+                        const list = cfg.datos !== undefined ? cfg.datos : data;
+                        cfg.el.innerHTML = `<option value="">${cfg.placeholder}</option>`;
+                        if (cfg.el.id === 'usuario-deposito-extra') {
+                            const optTodos = document.createElement('option');
+                            optTodos.value = '__TODOS__';
+                            optTodos.textContent = 'Todos los depósitos (ver y mover en todos)';
+                            cfg.el.appendChild(optTodos);
+                        }
+                        list.forEach(dep => {
+                            const opt = document.createElement('option');
+                            opt.value = dep.id;
+                            opt.textContent = dep.ubicacion ? `${dep.nombre} (${dep.ubicacion})` : dep.nombre;
+                            cfg.el.appendChild(opt);
+                        });
+                    });
+                    [ 'deposito-producto', 'transfer-origen', 'transfer-destino', 'inventario-filtro-deposito', 'usuario-deposito', 'cargar-inventario-deposito' ].forEach(function(id) {
+                        var sel = document.getElementById(id);
+                        if (sel && !sel._comboboxInit) initCombobox(sel);
+                        if (sel && sel._comboboxDropdown) syncComboboxOptions(sel);
+                        if (sel && sel._comboboxInput) {
+                            var o = sel.options[sel.selectedIndex];
+                            sel._comboboxInput.value = (o && o.value !== '') ? o.textContent : '';
+                        }
+                    });
+                })
+                .catch(err => console.error('Error al cargar depósitos', err));
+        }
+
+        function agregarDepositoExtra() {
+            const sel = document.getElementById('usuario-deposito-extra');
+            const listDiv = document.getElementById('usuario-depositos-extra-list');
+            if (!sel || !listDiv) return;
+            const val = sel.value;
+            const text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+            if (!val) return;
+
+            var allIds = [];
+            for (var i = 0; i < sel.options.length; i++) {
+                var v = sel.options[i].value;
+                if (v && v !== '__TODOS__') allIds.push(v);
+            }
+            var maxDepositos = allIds.length;
+
+            if (val === '__TODOS__') {
+                usuarioDepositosExtra = allIds.slice();
+                listDiv.innerHTML = '';
+                var chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'sidebar-btn';
+                chip.style.marginRight = '4px';
+                chip.style.marginBottom = '4px';
+                chip.setAttribute('data-id', '__TODOS__');
+                chip.textContent = 'Todos los depósitos';
+                chip.onclick = function () {
+                    usuarioDepositosExtra = [];
+                    this.remove();
+                };
+                listDiv.appendChild(chip);
+                sel.value = '';
+                return;
+            }
+
+            var todosChip = listDiv.querySelector('[data-id="__TODOS__"]');
+            if (todosChip) {
+                todosChip.remove();
+                usuarioDepositosExtra = [];
+            }
+            if (usuarioDepositosExtra.length >= maxDepositos) {
+                alert('El máximo de depósitos permitidos es la cantidad de depósitos existentes (' + maxDepositos + '). O elija "Todos los depósitos".');
+                return;
+            }
+            if (usuarioDepositosExtra.includes(val)) return;
+            usuarioDepositosExtra.push(val);
+
+            var chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'sidebar-btn';
+            chip.style.marginRight = '4px';
+            chip.style.marginBottom = '4px';
+            chip.setAttribute('data-id', val);
+            chip.textContent = text;
+            chip.onclick = function () {
+                var id = this.getAttribute('data-id');
+                usuarioDepositosExtra = usuarioDepositosExtra.filter(x => x !== id);
+                this.remove();
+            };
+            listDiv.appendChild(chip);
+            sel.value = '';
+        }
+
+        function cargarCategorias() {
+            fetchJson('/categorias')
+                .then(data => {
+                    const select = document.getElementById('categoria-producto');
+                    if (!select) return;
+                    select.innerHTML = '<option value="">Selecciona una categoría...</option>';
+                    data.forEach(cat => {
+                        const opt = document.createElement('option');
+                        opt.value = cat.id;
+                        opt.textContent = cat.abreviatura
+                            ? `${cat.abreviatura} - ${cat.nombre}`
+                            : cat.nombre;
+                        select.appendChild(opt);
+                    });
+                    if (!select._comboboxInit) initCombobox(select);
+                    syncComboboxOptions(select);
+                    if (select._comboboxInput) {
+                        var optCat = select.options[select.selectedIndex];
+                        select._comboboxInput.value = (optCat && optCat.value !== '') ? optCat.textContent : '';
+                    }
+                })
+                .catch(err => {
+                    console.error('Error al cargar categorías', err);
+                });
+        }
+
+        function cargarRoles() {
+            fetchJson('/roles')
+                .then(data => {
+                    const select = document.getElementById('rol_id');
+                    select.innerHTML = '<option value="">Selecciona un rol...</option>';
+                    data.forEach(rol => {
+                        const opt = document.createElement('option');
+                        opt.value = rol.id;
+                        opt.textContent = rol.nombre;
+                        select.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error al cargar roles', err);
+                });
+        }
+
+        cargarDepositos();
+        cargarCategorias();
+        cargarCategoriasParaInventario();
+        cargarRoles();
+        cargarHistorialMovimientos();
+
+        // Ver stock: la lista solo se carga al elegir depósito y pulsar Filtrar (no al cambiar el select)
+
+        var nombreProductoInput = document.getElementById('nombre-producto');
+        if (nombreProductoInput) {
+            nombreProductoInput.addEventListener('input', function() { actualizarDatalistNombres(this.value); });
+            nombreProductoInput.addEventListener('focus', function() { actualizarDatalistNombres(this.value); });
+        }
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.classList && e.target.classList.contains('linea-nombre')) actualizarDatalistNombres(e.target.value);
+        });
+
+        function anadirFilaComponente() {
+            var tbody = document.getElementById('tbody-componentes-crear');
+            if (!tbody) return;
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td><input type="text" class="linea-nombre linea-comp-nombre" placeholder="Nombre del componente" style="width:100%;padding:6px;border-radius:6px;border:1px solid #374151;background:#111;color:#e5e7eb;"></td><td><input type="number" class="linea-comp-cantidad" min="1" value="1" style="width:80px;padding:6px;border-radius:6px;border:1px solid #374151;background:#111;color:#e5e7eb;"></td><td><button type="button" class="sidebar-btn" style="padding:4px 8px;font-size:12px;" onclick="this.closest(\'tr\').remove()">Quitar</button></td>';
+            tbody.appendChild(tr);
+        }
+
+        const formProducto = document.getElementById('form-producto');
+        formProducto.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(formProducto);
+            const nombre = formData.get('nombre');
+            const observacion = formData.get('observacion');
+            const cantidadInicial = formData.get('cantidad_inicial');
+            const categoriaId = formData.get('categoria_id');
+            const depositoId = formData.get('deposito_id');
+            var componentes = [];
+            var tbody = document.getElementById('tbody-componentes-crear');
+            if (tbody) {
+                tbody.querySelectorAll('tr').forEach(function(tr) {
+                    var nombreInput = tr.querySelector('.linea-comp-nombre');
+                    var cantInput = tr.querySelector('.linea-comp-cantidad');
+                    var nom = (nombreInput && nombreInput.value || '').trim();
+                    var cant = cantInput ? Math.max(1, parseInt(cantInput.value, 10) || 1) : 1;
+                    if (nom) componentes.push({ nombre: nom, cantidad: cant });
+                });
+            }
+
+            const payload = {
+                nombre,
+                observacion,
+                cantidad_inicial: cantidadInicial,
+                categoria_id: categoriaId,
+                deposito_id: depositoId
+            };
+            if (componentes.length > 0) {
+                payload.es_componentes = true;
+                payload.componentes = componentes;
+            }
+
+            fetch('/items', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(text => { throw new Error(text); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    const msg = document.getElementById('mensaje-producto');
+                    const n = data.cantidad_creada || 1;
+                    msg.textContent = n === 1
+                        ? 'Ítem creado: ' + (data.codigos && data.codigos[0] ? data.codigos[0] : '')
+                        : (n + ' ítems creados: ' + (data.codigos ? data.codigos.join(', ') : ''));
+                    msg.classList.remove('error');
+                    msg.classList.add('ok');
+                    formProducto.reset();
+                    var tbodyComp = document.getElementById('tbody-componentes-crear');
+                    if (tbodyComp) tbodyComp.innerHTML = '';
+                    cargarInventario();
+                })
+                .catch(err => {
+                    const msg = document.getElementById('mensaje-producto');
+                    msg.textContent = 'Error al crear producto: ' + err.message;
+                    msg.classList.remove('ok');
+                    msg.classList.add('error');
+                });
+        });
+
+        const formCategoria = document.getElementById('form-categoria');
+        formCategoria.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(formCategoria);
+            const nombre = (formData.get('nombre') || '').toString().trim().toUpperCase();
+            const abreviatura = (formData.get('abreviatura') || '').toString().trim().toUpperCase().slice(0, 5);
+
+            fetch('/categorias', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre, abreviatura })
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(text => { throw new Error(text); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    const msg = document.getElementById('mensaje-categoria');
+                    msg.textContent = 'Categoría creada con éxito';
+                    msg.classList.remove('error');
+                    msg.classList.add('ok');
+                    formCategoria.reset();
+                    cargarCategorias();
+                })
+                .catch(err => {
+                    const msg = document.getElementById('mensaje-categoria');
+                    msg.textContent = 'Error al crear categoría: ' + err.message;
+                    msg.classList.remove('ok');
+                    msg.classList.add('error');
+                });
+        });
+
+        const formDeposito = document.getElementById('form-deposito');
+        formDeposito.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(formDeposito);
+            const nombre = formData.get('nombre');
+            const ubicacion = formData.get('ubicacion');
+
+            fetch('/depositos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre, ubicacion })
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.text().then(text => { throw new Error(text); });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    const msg = document.getElementById('mensaje-deposito');
+                    msg.textContent = 'Depósito creado con éxito';
+                    msg.classList.remove('error');
+                    msg.classList.add('ok');
+                    formDeposito.reset();
+                    cargarDepositos();
+                })
+                .catch(err => {
+                    const msg = document.getElementById('mensaje-deposito');
+                    msg.textContent = 'Error al crear depósito: ' + err.message;
+                    msg.classList.remove('ok');
+                    msg.classList.add('error');
+                });
+        });
+
+        function formatoFechaHora(createdAt) {
+            if (!createdAt) return '-';
+            const d = new Date(createdAt);
+            if (isNaN(d.getTime())) return '-';
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            const h = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${dd}-${mm}-${yyyy} ${h}:${min}`;
+        }
+
+        function limpiarFiltrosMovimientos() {
+            const codigoEl = document.getElementById('movimientos-filtro-codigo');
+            const usuarioEl = document.getElementById('movimientos-filtro-usuario');
+            const fechaDesdeEl = document.getElementById('movimientos-filtro-fecha-desde');
+            const fechaHastaEl = document.getElementById('movimientos-filtro-fecha-hasta');
+            if (codigoEl) codigoEl.value = '';
+            if (usuarioEl) usuarioEl.value = '';
+            if (fechaDesdeEl) fechaDesdeEl.value = '';
+            if (fechaHastaEl) fechaHastaEl.value = '';
+            cargarHistorialMovimientos();
+        }
+
+        function cargarHistorialMovimientos() {
+            const codigo = document.getElementById('movimientos-filtro-codigo') && document.getElementById('movimientos-filtro-codigo').value.trim();
+            const usuario = document.getElementById('movimientos-filtro-usuario') && document.getElementById('movimientos-filtro-usuario').value.trim();
+            const fechaDesde = document.getElementById('movimientos-filtro-fecha-desde') && document.getElementById('movimientos-filtro-fecha-desde').value;
+            const fechaHasta = document.getElementById('movimientos-filtro-fecha-hasta') && document.getElementById('movimientos-filtro-fecha-hasta').value;
+            const qs = new URLSearchParams();
+            if (codigo) qs.set('codigo', codigo);
+            if (usuario) qs.set('usuario', usuario);
+            if (fechaDesde) qs.set('fecha_desde', fechaDesde);
+            if (fechaHasta) qs.set('fecha_hasta', fechaHasta);
+            const url = '/movimientos-historial' + (qs.toString() ? '?' + qs.toString() : '');
+            fetchJson(url)
+                .then(data => {
+                    const tbody = document.querySelector('#tabla-movimientos tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    data.forEach(mov => {
+                        const tr = document.createElement('tr');
+                        const codigoVal = escapeHtml(mov.codigo_interno || '-');
+                        const itemVal = escapeHtml(mov.item_nombre || '-');
+                        const movimiento = escapeHtml((mov.deposito_origen_nombre || '') + ' → ' + (mov.deposito_destino_nombre || ''));
+                        const usuarioVal = escapeHtml(mov.usuario_username || '-');
+                        tr.innerHTML = `
+                            <td>${codigoVal}</td>
+                            <td>${itemVal}</td>
+                            <td>${movimiento}</td>
+                            <td>${formatoFechaHora(mov.created_at)}</td>
+                            <td>${mov.cantidad}</td>
+                            <td>${escapeHtml(mov.observacion || '')}</td>
+                            <td>${usuarioVal}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error al cargar historial de movimientos', err);
+                });
+        }
+
+        let categoriasParaInventario = [];
+
+        function cargarCategoriasParaInventario() {
+            fetchJson('/categorias')
+                .then(data => {
+                    categoriasParaInventario = data || [];
+                })
+                .catch(() => { categoriasParaInventario = []; });
+        }
+
+        function anadirLineaCargarInventario() {
+            const tbody = document.getElementById('tbody-lineas-inventario');
+            if (!tbody) return;
+            const opts = categoriasParaInventario.map(c =>
+                `<option value="${c.id}">${escapeHtml((c.abreviatura || '') + ' - ' + (c.nombre || ''))}</option>`
+            ).join('');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="text" class="linea-nombre" list="datalist-nombres-items" placeholder="Nombre del ítem (coincidencias por nombre)" style="width:100%;padding:6px;border-radius:6px;border:1px solid #374151;"></td>
+                <td><select class="linea-categoria" style="padding:6px;border-radius:6px;border:1px solid #374151;min-width:140px;"><option value="">Categoría...</option>${opts}</select></td>
+                <td><input type="number" class="linea-cantidad" min="1" value="1" style="width:70px;padding:6px;border-radius:6px;border:1px solid #374151;" title="Unidades = códigos únicos a generar"></td>
+                <td><input type="text" class="linea-observacion" placeholder="Opcional" style="width:100%;padding:6px;border-radius:6px;border:1px solid #374151;"></td>
+                <td><button type="button" class="sidebar-btn" style="padding:4px 8px;font-size:11px;" onclick="this.closest('tr').remove()">Quitar</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function guardarInventarioConConfirmacion() {
+            const depositoSelect = document.getElementById('cargar-inventario-deposito');
+            const depositoId = depositoSelect ? depositoSelect.value : '';
+            const depositoNombre = depositoSelect && depositoSelect.selectedIndex >= 0 ? depositoSelect.options[depositoSelect.selectedIndex].text : '';
+            if (!depositoId) {
+                const msg = document.getElementById('mensaje-cargar-inventario');
+                msg.textContent = 'Selecciona un depósito.';
+                msg.className = 'mensaje error';
+                return;
+            }
+            const filas = document.querySelectorAll('#tbody-lineas-inventario tr');
+            const lineas = [];
+            filas.forEach(tr => {
+                const nombre = (tr.querySelector('.linea-nombre') && tr.querySelector('.linea-nombre').value || '').trim();
+                const catSelect = tr.querySelector('.linea-categoria');
+                const categoriaId = catSelect ? catSelect.value : '';
+                const cantInput = tr.querySelector('.linea-cantidad');
+                const cantidad = Math.max(1, cantInput ? (Number(cantInput.value) || 0) : 0);
+                const observacion = (tr.querySelector('.linea-observacion') && tr.querySelector('.linea-observacion').value || '').trim();
+                if (nombre && categoriaId) lineas.push({ nombre, categoria_id: categoriaId, cantidad, observacion });
+            });
+            if (lineas.length === 0) {
+                const msg = document.getElementById('mensaje-cargar-inventario');
+                msg.textContent = 'Añade al menos un ítem con nombre y categoría.';
+                msg.className = 'mensaje error';
+                return;
+            }
+            const msg = document.getElementById('mensaje-cargar-inventario');
+            const primera = confirm('¿Guardar inventario con ' + lineas.length + ' ítem(s) en ' + (depositoNombre || 'este depósito') + '?');
+            if (!primera) return;
+            const segunda = confirm('¿Confirmar? Los ítems se crearán en la base de datos.');
+            if (!segunda) return;
+            msg.textContent = 'Guardando...';
+            msg.className = 'mensaje';
+            let ok = 0;
+            let totalCodigos = 0;
+            let err = null;
+            const promesas = lineas.map(l =>
+                fetch('/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nombre: l.nombre,
+                        observacion: l.observacion || null,
+                        categoria_id: l.categoria_id,
+                        deposito_id: depositoId,
+                        cantidad_inicial: l.cantidad
+                    })
+                }).then(r => {
+                    if (!r.ok) return r.text().then(t => { err = t; throw new Error(t); });
+                    return r.json().then(data => {
+                        ok++;
+                        totalCodigos += (data.cantidad_creada || 1);
+                    });
+                })
+            );
+            Promise.all(promesas)
+                .then(() => {
+                    msg.textContent = 'Inventario guardado: ' + totalCodigos + ' código(s) único(s) creado(s).';
+                    msg.className = 'mensaje ok';
+                    document.getElementById('tbody-lineas-inventario').innerHTML = '';
+                    anadirLineaCargarInventario();
+                    cargarInventario();
+                })
+                .catch(e => {
+                    msg.textContent = (err || e.message) || 'Error al guardar inventario';
+                    msg.className = 'mensaje error';
+                });
+        }
+
+        const formTransferencia = document.getElementById('form-transferencia');
+        formTransferencia.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(formTransferencia);
+            const itemCodigo = (formData.get('item_codigo') || '').trim();
+            const origenId = formData.get('deposito_origen_id');
+            const destinoId = formData.get('deposito_destino_id');
+            const cantidad = formData.get('cantidad');
+            const observacion = formData.get('observacion');
+
+            function enviarTransferencia() {
+                fetch('/movimientos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        item_codigo: itemCodigo,
+                        deposito_origen_id: origenId,
+                        deposito_destino_id: destinoId,
+                        cantidad,
+                        observacion
+                    })
+                })
+                .then(res => {
+                    if (!res.ok) return res.text().then(text => { throw new Error(text); });
+                    return res.text();
+                })
+                .then(msgTexto => {
+                    const msg = document.getElementById('mensaje-transferencia');
+                    msg.textContent = msgTexto || 'Transferencia registrada con éxito';
+                    msg.classList.remove('error');
+                    msg.classList.add('ok');
+                    formTransferencia.reset();
+                    cargarInventario();
+                })
+                .catch(err => {
+                    const msg = document.getElementById('mensaje-transferencia');
+                    msg.textContent = 'Error al registrar transferencia: ' + err.message;
+                    msg.classList.remove('ok');
+                    msg.classList.add('error');
+                });
+            }
+
+            fetch('/item-info?codigo=' + encodeURIComponent(itemCodigo))
+                .then(r => r.ok ? r.json() : null)
+                .then(info => {
+                    if (info && info.item_padre_id && info.item_padre_nombre) {
+                        if (!confirm('Este componente es parte de "' + (info.item_padre_nombre || 'ítem padre') + '". ¿Está seguro de moverlo?')) return;
+                    }
+                    enviarTransferencia();
+                })
+                .catch(() => enviarTransferencia());
+        });
+
+        const formUsuario = document.getElementById('form-usuario');
+        formUsuario.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const fd = new FormData(formUsuario);
+            const payload = {
+                username: fd.get('username'),
+                password: fd.get('password'),
+                rol_id: fd.get('rol_id'),
+                deposito_asignado_id: fd.get('deposito_asignado_id') || null,
+                nombre: fd.get('nombre') || null,
+                apellido: fd.get('apellido') || null,
+                departamento: fd.get('departamento') || null,
+                ciudad: fd.get('ciudad') || null,
+                telefono: fd.get('telefono') || null,
+                depositos_permitidos: usuarioDepositosExtra
+            };
+
+            fetch('/crear-usuario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(res => {
+                    if (!res.ok) return res.text().then(t => { throw new Error(t); });
+                    return res.text();
+                })
+                .then(text => {
+                    const msg = document.getElementById('mensaje-usuario');
+                    msg.textContent = text || 'Usuario creado con éxito';
+                    msg.classList.remove('error');
+                    msg.classList.add('ok');
+                    formUsuario.reset();
+                    usuarioDepositosExtra = [];
+                    const listDiv = document.getElementById('usuario-depositos-extra-list');
+                    if (listDiv) listDiv.innerHTML = '';
+                    cargarRoles();
+                    cargarDepositos();
+                })
+                .catch(err => {
+                    const msg = document.getElementById('mensaje-usuario');
+                    msg.textContent = 'Error al crear usuario: ' + err.message;
+                    msg.classList.remove('ok');
+                    msg.classList.add('error');
+                });
+        });
+    </script>
+</body>
+</html>
